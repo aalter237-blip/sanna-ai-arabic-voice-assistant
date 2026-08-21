@@ -124,4 +124,23 @@ public class VoiceAgentPlugin extends Plugin {
         if (t != null && t.length() > 0) out.add(t.toString());
         for (int i = 0; i < node.getChildCount(); i++) collectText(node.getChild(i), out);
     }
+
+    @PluginMethod
+    public void getNotifications(PluginCall call) {
+        com.getcapacitor.JSArray arr = new com.getcapacitor.JSArray();
+        if (SannaNotificationListener.instance != null) {
+            for (SannaNotificationListener.Item it : SannaNotificationListener.instance.snapshot()) {
+                JSObject o = new JSObject();
+                o.put("pkg", it.pkg);
+                o.put("title", it.title);
+                o.put("text", it.text);
+                arr.put(o);
+            }
+        }
+        JSObject result = new JSObject();
+        result.put("items", arr);
+        result.put("lastTitle", SannaNotificationListener.lastTitle);
+        result.put("lastText", SannaNotificationListener.lastText);
+        call.resolve(result);
+    }
 }
