@@ -96,25 +96,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     try {
       const { verifyGeminiKey } = await import('../services/gemini-direct');
-    await verifyGeminiKey(newKeyInput.trim());
-    const res = { ok: true }; const data = { valid: true, error: '' }; // , {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: newKeyInput.trim() }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.valid) {
-        setTestResult({ success: true, message: 'تم التحقق من المفتاح بنجاح!' });
-        onAddApiKey(newKeyInput.trim());
-        setNewKeyInput('');
-      } else {
-        setTestResult({
-          success: false,
-          message: data.error || 'فشل التحقق من المفتاح. تأكد من صحته.',
-        });
-      }
+      await verifyGeminiKey(newKeyInput.trim());
+      setTestResult({ success: true, message: 'تم التحقق من المفتاح بنجاح!' });
+      onAddApiKey(newKeyInput.trim());
+      setNewKeyInput('');
     } catch (err: any) {
       setTestResult({
         success: false,
