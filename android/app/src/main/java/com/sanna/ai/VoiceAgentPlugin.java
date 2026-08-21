@@ -143,4 +143,33 @@ public class VoiceAgentPlugin extends Plugin {
         result.put("lastText", SannaNotificationListener.lastText);
         call.resolve(result);
     }
+
+    @PluginMethod
+    public void swipeUp(PluginCall call) { swipeDir(call, 0, 1); }
+    @PluginMethod
+    public void swipeDown(PluginCall call) { swipeDir(call, 0, -1); }
+    @PluginMethod
+    public void swipeLeft(PluginCall call) { swipeDir(call, 1, 0); }
+    @PluginMethod
+    public void swipeRight(PluginCall call) { swipeDir(call, -1, 0); }
+
+    private void swipeDir(PluginCall call, int dx, int dy) {
+        if (SannaAccessibilityService.instance == null) { call.reject("Service off"); return; }
+        android.util.DisplayMetrics m = getContext().getResources().getDisplayMetrics();
+        float cx = m.widthPixels / 2f;
+        float cy = m.heightPixels / 2f;
+        float x2 = cx - dx * m.widthPixels * 0.35f;
+        float y2 = cy - dy * m.heightPixels * 0.35f;
+        SannaAccessibilityService.instance.swipe(cx, cy, x2, y2, 350);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void lockScreen(PluginCall call) {
+        if (SannaAccessibilityService.instance == null) { call.reject("Service off"); return; }
+        SannaAccessibilityService.instance.performGlobalAction(
+            android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN
+        );
+        call.resolve();
+    }
 }
