@@ -235,7 +235,7 @@ export default function App() {
     try {
       const { askGemini } = await import('./services/gemini-direct');
       const reply = await askGemini(activeKey || '', userText);
-      const endpoint = mode === 'online' ? '/api/agent/chat' : '/api/offline/chat';
+      const endpoint = '';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
