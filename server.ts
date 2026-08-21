@@ -63,8 +63,8 @@ function rotateServerGeminiKey(reason: string = 'Rate limit 429/403'): string {
   return DEFAULT_GEMINI_KEYS[currentServerKeyIndex];
 }
 
-const SANNA_SYSTEM_PROMPT = `
-You are "Sanna" (سنا), an advanced Arabic AI Voice Assistant & General Android UI Automation Agent.
+const SYSTEM_PROMPT = `
+You are an advanced Arabic AI Voice Assistant & General Android UI Automation Agent.
 Your role is to understand user voice commands in Arabic across all dialects (Sudanese - سوداني, Modern Standard Arabic - الفصحى, Egyptian - مصري, Gulf/Saudi - خليجي/سعودي, Levantine - شامي, Maghrebi - مغاربي) and execute Android smartphone actions.
 
 ====================================================
@@ -90,7 +90,7 @@ When an action is needed, return a structured JSON code block containing an arra
 
 \`\`\`json
 {
-  "speech": "الجملة الصوتية التي ستقولها سنا للمستخدم باللغة العربية (مثال: فتحت ليك الصفحة، يرجى إدخال الرمز للاستمرار)",
+  "speech": "الجملة الصوتية التي سيقولها المساعد للمستخدم باللغة العربية (مثال: فتحت ليك الصفحة، يرجى إدخال الرمز للاستمرار)",
   "dialect_detected": "sudanese" | "saudi" | "egyptian" | "levantine" | "maghrebi" | "msa",
   "intent": "general_ui_automation" | "send_whatsapp" | "read_screen" | "click_element" | "system_control" | "open_app" | "secure_checkpoint" | "general_qa",
   "steps": [
@@ -165,9 +165,36 @@ Response:
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "Sanna AI Assistant Backend",
+    service: "AI Voice Assistant Backend",
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
   });
+});
+
+// Endpoint to validate a custom Gemini API Key
+app.post("/api/keys/validate", async (req, res) => {
+  const { apiKey } = req.body;
+  if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
+    return res.status(400).json({ valid: false, error: "يرجى كتابة مفتاح API صالح." });
+  }
+
+  try {
+    const testClient = new GoogleGenAI({ apiKey: apiKey.trim() });
+    const testRes = await testClient.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: "قل: تم التحقق بنجاح",
+    });
+
+    return res.json({
+      valid: true,
+      message: "تم التحقق من المفتاح بنجاح! المفتاح يعمل بشكل ممتاز.",
+      sample: testRes.text || "تم التحقق",
+    });
+  } catch (err: any) {
+    return res.status(400).json({
+      valid: false,
+      error: err.message || "فشل التحقق من المفتاح. تأكد من صحة المفتاح والصلاحيات.",
+    });
+  }
 });
 
 // Cloud Gemini Inference endpoint with Multi-Key Rotation & Failover
@@ -203,10 +230,10 @@ app.post("/api/agent/chat", async (req, res) => {
 
     try {
       const response = await aiContext.client.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
-          systemInstruction: SANNA_SYSTEM_PROMPT,
+          systemInstruction: SYSTEM_PROMPT,
           temperature: 0.3,
           responseMimeType: "application/json",
         },
@@ -350,7 +377,7 @@ function generateOfflineResponse(text: string, currentScreen: string) {
   // Read screen / Accessibility
   if (lower.includes("اقرأ") || lower.includes("شاشة") || lower.includes("اقرا") || lower.includes("لخص") || lower.includes("شو مكتوب")) {
     return {
-      speech: "جاري فحص الشاشة وقراءة النصوص المتوفرة بواسطة خدمة Sanna Accessibility Service.",
+      speech: "جاري فحص الشاشة وقراءة النصوص المتوفرة بواسطة خدمة Accessibility Service.",
       dialect_detected: "msa",
       intent: "read_screen",
       steps: [
@@ -396,7 +423,7 @@ function generateOfflineResponse(text: string, currentScreen: string) {
           tool: "system_control",
           action: "set_timer",
           target: "07:00 AM",
-          value: "منبه سنا",
+          value: "منبه صوتي",
           description: "ضبط منبه النظام عبر Android AlarmManager",
         },
       ],
@@ -450,7 +477,7 @@ function generateOfflineResponse(text: string, currentScreen: string) {
   // Click on screen
   if (lower.includes("اضغط") || lower.includes("انقر") || lower.includes("دوس") || lower.includes("كبس")) {
     return {
-      speech: "جاري البحث عن العنصر والنقر عليه عبر SannaAccessibilityService.",
+      speech: "جاري البحث عن العنصر والنقر عليه عبر خدمة إمكانية الوصول.",
       dialect_detected: "msa",
       intent: "click_element",
       steps: [
@@ -467,7 +494,7 @@ function generateOfflineResponse(text: string, currentScreen: string) {
 
   // General fallback
   return {
-    speech: "أهلاً بك، أنا سنا مساعدك الذكي للأندرويد. يمكنك أن تطلب مني فتح أي تطبيق، النقر التلقائي، أو قراءة الشاشة.",
+    speech: "أهلاً بك، أنا مساعدك الصوتي الذكي للأندرويد. يمكنك أن تطلب مني فتح أي تطبيق، النقر التلقائي، أو قراءة الشاشة.",
     dialect_detected: "msa",
     intent: "general_qa",
     steps: [],
@@ -490,7 +517,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Sanna AI] Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[AI Voice Assistant] Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

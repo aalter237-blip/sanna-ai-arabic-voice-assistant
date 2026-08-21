@@ -43,14 +43,14 @@ export const CodeExplorer: React.FC<CodeExplorerProps> = ({ isArabicUI }) => {
     setIsDownloadingZip(true);
     try {
       const zip = new JSZip();
-      const rootFolder = zip.folder('sannabotapp');
+      const rootFolder = zip.folder('android-voice-agent');
 
       CODEBASE_FILES.forEach((file) => {
         rootFolder?.file(file.path, file.content);
       });
 
       // Add README.md for immediate setup instructions
-      const readmeContent = `# Sanna AI (سنا) - Arabic AI Voice Assistant & Android Accessibility Automation
+      const readmeContent = `# Arabic AI Voice Assistant & Android Accessibility Automation Agent
 
 Production-grade AI Voice Assistant and Android Device Control Agent supporting Arabic (MSA & Dialects), Hybrid Online/Offline execution, and Accessibility Automation.
 
@@ -66,7 +66,7 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
 - **src/audio/**: Arabic Speech-To-Text (\`stt-service.ts\`), TTS (\`tts-service.ts\`), and Wake Word (\`wake-word-service.ts\`).
 - **src/agent/**: Master Pipeline (\`conversation-pipeline.ts\`), Arabic System Prompt (\`system-prompt.ts\`), Hybrid Provider (\`hybrid-provider.ts\`), and Tool Loop (\`tool-loop.ts\`).
 - **src/tools/**: Accessibility Bridge caller (\`accessibility-tool.ts\`), WhatsApp automate (\`whatsapp-tool.ts\`), and System Control (\`system-control-tool.ts\`).
-- **android/native/**: Kotlin Accessibility Service (\`SannaAccessibilityService.kt\`) and React Native Bridge (\`SannaAccessibilityBridge.kt\`).
+- **android/native/**: Kotlin Accessibility Service (\`AndroidAccessibilityService.kt\`) and React Native Bridge (\`AndroidAccessibilityBridge.kt\`).
 `;
       rootFolder?.file('README.md', readmeContent);
 
@@ -74,7 +74,7 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'sannabotapp-source-code.zip';
+      link.download = 'android-voice-agent-codebase.zip';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -109,9 +109,9 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
           </div>
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span>{isArabicUI ? 'مستودع الكود المصدري الكامل لمشروع Sanna' : 'Sanna Production Codebase'}</span>
+              <span>{isArabicUI ? 'مستودع الكود المصدري الكامل للمشروع' : 'Production Codebase'}</span>
               <span className="text-xs font-mono text-cyan-300 bg-slate-800 px-2 py-0.5 rounded">
-                100% Un-truncated
+                100% Native & Complete
               </span>
             </h2>
             <p className="text-xs text-slate-400">

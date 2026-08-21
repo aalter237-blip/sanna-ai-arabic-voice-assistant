@@ -2,7 +2,7 @@ export type ArabicDialect = 'auto' | 'saudi' | 'egyptian' | 'levantine' | 'maghr
 
 export type OperatingMode = 'online' | 'offline';
 
-export type AppScreen = 'home' | 'whatsapp' | 'whatsapp_chat' | 'settings' | 'clock' | 'camera' | 'screen_reader';
+export type AppScreen = 'home' | 'whatsapp' | 'whatsapp_chat' | 'settings' | 'clock' | 'camera' | 'screen_reader' | 'bank_app';
 
 export interface AccessibilityNode {
   id: string;
@@ -17,13 +17,16 @@ export interface AccessibilityNode {
 }
 
 export interface ToolStep {
-  step_number: number;
-  tool: 'system_control' | 'accessibility_control' | 'whatsapp_tool' | 'screen_reader';
+  step_number?: number;
+  tool: string;
   action: string;
   target?: string;
   value?: string | number | boolean;
   recipient?: string;
-  description: string;
+  message?: string;
+  time?: string;
+  label?: string;
+  description?: string;
   status?: 'pending' | 'executing' | 'completed' | 'failed';
 }
 
@@ -70,7 +73,7 @@ export interface CodeFile {
   path: string;
   name: string;
   category: 'config' | 'audio' | 'agent' | 'tools' | 'native' | 'root';
-  language: 'typescript' | 'json' | 'kotlin' | 'xml' | 'groovy' | 'markdown';
+  language: 'typescript' | 'javascript' | 'json' | 'kotlin' | 'xml' | 'groovy' | 'markdown' | 'yaml' | 'properties';
   content: string;
   description: string;
 }

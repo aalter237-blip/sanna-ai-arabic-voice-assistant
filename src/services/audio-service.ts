@@ -1,4 +1,4 @@
-export class SannaAudioEngine {
+export class VoiceAudioEngine {
   private recognition: any = null;
   private isListening: boolean = false;
   private audioCtx: AudioContext | null = null;
@@ -44,7 +44,7 @@ export class SannaAudioEngine {
       };
 
       this.recognition.onerror = (event: any) => {
-        console.warn('[SannaAudioEngine] Recognition error:', event.error);
+        console.warn('[VoiceAudioEngine] Recognition error:', event.error);
         this.isListening = false;
         this.onStateChangeCallback(false);
         this.onErrorCallback(event.error);
@@ -74,7 +74,7 @@ export class SannaAudioEngine {
       this.recognition.start();
       return true;
     } catch (e: any) {
-      console.warn('[SannaAudioEngine] Start failed:', e);
+      console.warn('[VoiceAudioEngine] Start failed:', e);
       return false;
     }
   }
@@ -105,6 +105,16 @@ export class SannaAudioEngine {
     return Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
   }
 
+  private speechRate: number = 0.95;
+  private speechPitch: number = 1.05;
+  private soundEffectsEnabled: boolean = true;
+
+  public setSpeechSettings(rate: number, pitch: number, soundEffects: boolean = true) {
+    this.speechRate = rate;
+    this.speechPitch = pitch;
+    this.soundEffectsEnabled = soundEffects;
+  }
+
   // Text-To-Speech
   public speakArabic(text: string, onEnd?: () => void) {
     if (!window.speechSynthesis) {
@@ -123,8 +133,8 @@ export class SannaAudioEngine {
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'ar-SA';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.05;
+    utterance.rate = this.speechRate;
+    utterance.pitch = this.speechPitch;
 
     // Pick best Arabic voice if available
     const voices = window.speechSynthesis.getVoices();
@@ -138,7 +148,7 @@ export class SannaAudioEngine {
     };
 
     utterance.onerror = (e) => {
-      console.warn('[SannaAudioEngine] TTS error', e);
+      console.warn('[VoiceAudioEngine] TTS error', e);
       if (onEnd) onEnd();
     };
 
@@ -225,4 +235,4 @@ export class SannaAudioEngine {
   }
 }
 
-export const sannaAudio = new SannaAudioEngine();
+export const voiceAudio = new VoiceAudioEngine();

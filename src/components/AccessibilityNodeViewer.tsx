@@ -69,12 +69,12 @@ export const AccessibilityNodeViewer: React.FC<AccessibilityNodeViewerProps> = (
           },
           {
             id: 'node-reader-icon',
-            viewId: 'com.sannabotapp:id/screen_reader',
+            viewId: 'com.androidvoiceagent:id/screen_reader',
             className: 'android.widget.TextView',
             text: 'قارئ الشاشة',
             clickable: true,
             bounds: '[840,420][1020,640]',
-            description: 'Sanna Accessibility Inspector',
+            description: 'Accessibility Screen Inspector',
           },
         ];
 
@@ -187,7 +187,7 @@ export const AccessibilityNodeViewer: React.FC<AccessibilityNodeViewerProps> = (
             </h2>
             <p className="text-xs text-slate-400">
               {isArabicUI
-                ? 'العقد البرمجية الحية التي يراها ويتحكم بها كود SannaAccessibilityService.kt'
+                ? 'العقد البرمجية الحية التي يراها ويتحكم بها كود AndroidAccessibilityService.kt'
                 : 'Live view hierarchy inspected and automated by Kotlin Native Service'}
             </p>
           </div>

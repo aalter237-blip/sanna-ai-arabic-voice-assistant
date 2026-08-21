@@ -1,28 +1,91 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { VoiceAssistantOrb } from './components/VoiceAssistantOrb';
-import { AndroidSimulator } from './components/AndroidSimulator';
-import { AccessibilityNodeViewer } from './components/AccessibilityNodeViewer';
-import { ExecutionLogs } from './components/ExecutionLogs';
-import { DialectPresets } from './components/DialectPresets';
-import { CodeExplorer } from './components/CodeExplorer';
-import { sannaAudio } from './services/audio-service';
-import {
-  OperatingMode,
-  ArabicDialect,
-  AppScreen,
-  ExecutionLogItem,
-  WhatsAppChat,
-  AgentResponse,
-  ToolStep,
-} from './types';
+import { QuickCommands } from './components/QuickCommands';
+import { SettingsModal } from './components/SettingsModal';
+import { voiceAudio } from './services/audio-service';
+import { ArabicDialect, OperatingMode, AgentResponse } from './types';
+import { User, Phone, MessageSquare } from 'lucide-react';
+import defaultBg from './assets/images/app_background_1787290542004.jpg';
+
+// Fixed Owner Information
+const OWNER_NAME = 'S҉H҉A҉R҉G҉A҉W҉E҉2҉3҉7';
+const OWNER_PHONE = '+24962006146';
+const OWNER_WHATSAPP = 'https://wa.me/qr/WV4DJQ6BHO2WF1';
 
 export default function App() {
-  // Navigation & Preferences State
-  const [activeTab, setActiveTab] = useState<'simulator' | 'code' | 'nodes' | 'logs'>('simulator');
-  const [mode, setMode] = useState<OperatingMode>('online');
+  // Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [dialect, setDialect] = useState<ArabicDialect>('auto');
-  const [isArabicUI, setIsArabicUI] = useState<boolean>(true);
+  const [mode, setMode] = useState<OperatingMode>('online');
+
+  // Background Customization
+  const [bgOpacity, setBgOpacity] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('voice_assistant_bg_opacity');
+      return saved ? parseFloat(saved) : 0.65;
+    } catch {
+      return 0.65;
+    }
+  });
+
+  const [customBg, setCustomBg] = useState<string>(() => {
+    try {
+      return localStorage.getItem('voice_assistant_custom_bg') || defaultBg;
+    } catch {
+      return defaultBg;
+    }
+  });
+
+  // Custom API Keys List (Stored locally)
+  const [apiKeys, setApiKeys] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('voice_assistant_api_keys');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [activeApiKeyIndex, setActiveApiKeyIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('voice_assistant_active_key_idx');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // Speech & Voice Configuration
+  const [speechRate, setSpeechRate] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('voice_assistant_rate');
+      return saved ? parseFloat(saved) : 0.95;
+    } catch {
+      return 0.95;
+    }
+  });
+
+  const [speechPitch, setSpeechPitch] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('voice_assistant_pitch');
+      return saved ? parseFloat(saved) : 1.05;
+    } catch {
+      return 1.05;
+    }
+  });
+
+  const [soundEffects, setSoundEffects] = useState<boolean>(true);
+
+  // Wake Words List
+  const [wakeWords, setWakeWords] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('voice_assistant_wake_words');
+      return saved ? JSON.parse(saved) : ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم'];
+    } catch {
+      return ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم'];
+    }
+  });
 
   // Voice & Conversation State
   const [isListening, setIsListening] = useState<boolean>(false);
@@ -30,100 +93,68 @@ export default function App() {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
   const [agentSpeech, setAgentSpeech] = useState<string>(
-    'مرحباً بك! أنا سنا، مساعدك الذكي لنظام أندرويد. اضغط على الميكروفون للتحدث معي أو اختر أمراً جاهزاً.'
+    'مرحباً بك! أنا مساعدك الصوتي الذكي. اضغط على الدائرة للتحدث أو اختر أمراً للبدء.'
   );
   const [conversationHistory, setConversationHistory] = useState<any[]>([]);
 
-  // Telemetry & Logs
-  const [logs, setLogs] = useState<ExecutionLogItem[]>([
-    {
-      id: 'log-init-1',
-      timestamp: new Date().toLocaleTimeString(),
-      phase: 'WAKE_WORD',
-      title: 'خدمة سنا مهيأة وجاهزة',
-      details: 'تم تهيئة محرك Sanna AI Voice Engine ونظام الربط مع SannaAccessibilityService بنجاح.',
-      status: 'info',
-    },
-  ]);
+  // Sync TTS settings with engine
+  useEffect(() => {
+    voiceAudio.setSpeechSettings(speechRate, speechPitch, soundEffects);
+    try {
+      localStorage.setItem('voice_assistant_rate', speechRate.toString());
+      localStorage.setItem('voice_assistant_pitch', speechPitch.toString());
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [speechRate, speechPitch, soundEffects]);
 
-  // Android Device Simulator State
-  const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
-  const [volumeLevel, setVolumeLevel] = useState<number>(75);
-  const [wifiEnabled, setWifiEnabled] = useState<boolean>(true);
-  const [activeChatRecipient, setActiveChatRecipient] = useState<string>('أمي');
-  const [activeTapPoint, setActiveTapPoint] = useState<{ x: number; y: number; label?: string } | null>(null);
-  const [highlightedElement, setHighlightedElement] = useState<string | null>(null);
+  // Sync API Keys to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('voice_assistant_api_keys', JSON.stringify(apiKeys));
+      localStorage.setItem('voice_assistant_active_key_idx', activeApiKeyIndex.toString());
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [apiKeys, activeApiKeyIndex]);
 
-  const [alarms, setAlarms] = useState([
-    { id: 'al-1', time: '07:00 ص', label: 'الاستيقاظ للعمل', enabled: true },
-    { id: 'al-2', time: '08:30 ص', label: 'الاجتماع الصباحي', enabled: false },
-  ]);
+  // Sync Wake Words to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('voice_assistant_wake_words', JSON.stringify(wakeWords));
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [wakeWords]);
 
-  const [whatsappChats, setWhatsappChats] = useState<WhatsAppChat[]>([
-    {
-      id: 'chat-mom',
-      name: 'أمي (والدتي)',
-      avatarColor: '#10B981',
-      lastMessage: 'يا ولدي لا تتأخر على الغداء',
-      time: '10:30',
-      unreadCount: 1,
-      messages: [
-        { id: 'm1', sender: 'أمي', text: 'السلام عليكم، متى راجع للبيت؟', time: '10:15', isOutgoing: false },
-        { id: 'm2', sender: 'أمي', text: 'يا ولدي لا تتأخر على الغداء', time: '10:30', isOutgoing: false },
-      ],
-    },
-    {
-      id: 'chat-ali',
-      name: 'علي (العمل)',
-      avatarColor: '#3B82F6',
-      lastMessage: 'وصلت الموقع وجاهز للاجتماع',
-      time: '09:45',
-      unreadCount: 0,
-      messages: [
-        { id: 'm3', sender: 'علي', text: 'هلا، أوراق المشروع جاهزة معك؟', time: '09:30', isOutgoing: false },
-        { id: 'm4', sender: 'أنا', text: 'أي نعم جاهزة، في طريقي إليك', time: '09:32', isOutgoing: true },
-      ],
-    },
-    {
-      id: 'chat-sarah',
-      name: 'سارة',
-      avatarColor: '#EC4899',
-      lastMessage: 'تم إرسال الملفات على البريد',
-      time: 'أمس',
-      unreadCount: 0,
-      messages: [
-        { id: 'm5', sender: 'سارة', text: 'تم إرسال الملفات على البريد', time: 'أمس', isOutgoing: false },
-      ],
-    },
-  ]);
+  // Sync Background to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('voice_assistant_bg_opacity', bgOpacity.toString());
+      localStorage.setItem('voice_assistant_custom_bg', customBg);
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [bgOpacity, customBg]);
 
   // Audio Engine Hookup
   useEffect(() => {
-    sannaAudio.onStateChange((listening) => {
+    voiceAudio.onStateChange((listening) => {
       setIsListening(listening);
     });
 
-    sannaAudio.onResult((text, isFinal) => {
+    voiceAudio.onResult((text, isFinal) => {
       setTranscript(text);
       if (isFinal && text.trim()) {
         handleUserMessage(text.trim());
       }
     });
 
-    sannaAudio.onError((err) => {
+    voiceAudio.onError((err) => {
       console.warn('Audio recognition error:', err);
       setIsListening(false);
     });
-  }, [mode, dialect, currentScreen, conversationHistory]);
-
-  const addLog = (log: Omit<ExecutionLogItem, 'id' | 'timestamp'>) => {
-    const newLog: ExecutionLogItem = {
-      ...log,
-      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      timestamp: new Date().toLocaleTimeString(),
-    };
-    setLogs((prev) => [newLog, ...prev]);
-  };
+  }, [dialect, mode, conversationHistory, apiKeys, activeApiKeyIndex]);
 
   const handleStartListening = () => {
     setTranscript('');
@@ -136,19 +167,43 @@ export default function App() {
       msa: 'ar-SA',
     };
     const locale = localeMap[dialect] || 'ar-SA';
-    sannaAudio.startListening(locale);
-
-    addLog({
-      phase: 'WAKE_WORD',
-      title: 'بدء الاستماع الصوتي (Wake Trigger)',
-      details: `تم تفعيل الميكروفون باللغة العربية (Locale: ${locale}).`,
-      status: 'info',
-    });
+    voiceAudio.startListening(locale);
   };
 
   const handleStopListening = () => {
-    sannaAudio.stopListening();
+    voiceAudio.stopListening();
     setIsListening(false);
+  };
+
+  // Add / Remove Custom API Keys
+  const handleAddApiKey = (newKey: string) => {
+    if (!newKey.trim()) return;
+    setApiKeys((prev) => {
+      const next = [...prev, newKey.trim()];
+      setActiveApiKeyIndex(next.length - 1);
+      return next;
+    });
+  };
+
+  const handleRemoveApiKey = (index: number) => {
+    setApiKeys((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (activeApiKeyIndex >= next.length) {
+        setActiveApiKeyIndex(Math.max(0, next.length - 1));
+      }
+      return next;
+    });
+  };
+
+  // Add / Remove Wake Words
+  const handleAddWakeWord = (word: string) => {
+    if (word.trim() && !wakeWords.includes(word.trim())) {
+      setWakeWords((prev) => [...prev, word.trim()]);
+    }
+  };
+
+  const handleRemoveWakeWord = (index: number) => {
+    setWakeWords((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Master Conversation Pipeline Execution
@@ -157,21 +212,12 @@ export default function App() {
 
     setTranscript(userText);
     setIsProcessing(true);
-    sannaAudio.stopSpeaking();
+    voiceAudio.stopSpeaking();
 
     const currentDialect = forcedDialect || dialect;
-
-    // 1. Log Input
-    addLog({
-      phase: 'STT_INPUT',
-      title: `استلام الأمر الصوتي: "${userText}"`,
-      details: `تم التقاط الكلام عبر خدمة STT باللهجة: ${currentDialect}.`,
-      payload: { input_text: userText, dialect: currentDialect, currentScreen },
-      status: 'info',
-    });
+    const activeKey = apiKeys.length > 0 && apiKeys[activeApiKeyIndex] ? apiKeys[activeApiKeyIndex] : undefined;
 
     try {
-      // 2. Call Server LLM (Cloud Gemini or Local Edge SLM)
       const endpoint = mode === 'online' ? '/api/agent/chat' : '/api/offline/chat';
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -180,45 +226,25 @@ export default function App() {
           message: userText,
           history: conversationHistory,
           dialect: currentDialect,
-          currentScreen,
+          activeKey: activeKey,
         }),
       });
 
       const data: AgentResponse = await res.json();
 
-      // 3. Log LLM Output
-      addLog({
-        phase: 'LLM_INFERENCE',
-        title: `تحليل الذكاء الاصطناعي (${data.source})`,
-        details: `تم استخراج النية [${data.intent || 'action'}] وبناء ${data.steps?.length || 0} خطوات تنفيذية.`,
-        payload: data,
-        status: 'success',
-      });
-
-      // 4. Update Speech state
       const vocalText = data.speech || 'تم تنفيذ طلبك بنجاح.';
       setAgentSpeech(vocalText);
 
-      // 5. Execute Android Tool Automation Steps Sequentially
-      if (data.steps && data.steps.length > 0) {
-        await executeToolSteps(data.steps, userText);
-      }
-
-      // 6. Speak Vocal Response via Arabic TTS Engine
+      // Speak Vocal Response via Arabic TTS Engine
       setIsSpeaking(true);
-      addLog({
-        phase: 'TTS_OUTPUT',
-        title: 'توليد النطق الصوتي العربي (TTS)',
-        details: `سنا تنطق: "${vocalText}"`,
-        status: 'info',
-      });
-
-      sannaAudio.playSuccessChime();
-      sannaAudio.speakArabic(vocalText, () => {
+      if (soundEffects) {
+        voiceAudio.playSuccessChime();
+      }
+      voiceAudio.speakArabic(vocalText, () => {
         setIsSpeaking(false);
       });
 
-      // 7. Update History
+      // Update History
       setConversationHistory((prev) => [
         ...prev,
         { role: 'user', content: userText },
@@ -226,326 +252,139 @@ export default function App() {
       ]);
     } catch (err: any) {
       console.error('Agent execution error:', err);
-      addLog({
-        phase: 'LLM_INFERENCE',
-        title: 'تعذر المعالجة',
-        details: err.message || 'حدث خطأ أثناء معالجة الأمر.',
-        status: 'error',
-      });
       setAgentSpeech('عذراً، حدث خطأ أثناء معالجة الأمر. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Automated Android Accessibility & System Tool Execution
-  const executeToolSteps = async (steps: ToolStep[], userPrompt: string) => {
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
-
-      addLog({
-        phase: 'TOOL_PARSER',
-        title: `تنفيذ الخطوة ${step.step_number || i + 1}: ${step.tool} -> ${step.action}`,
-        details: step.description || `جاري تطبيق الإجراء على ${step.target || step.action}`,
-        payload: step,
-        status: 'info',
-      });
-
-      // Execute specific Tool Actions
-      if (step.tool === 'whatsapp_tool' || step.action === 'send_message') {
-        const recipientName = step.recipient || (userPrompt.includes('علي') ? 'علي' : 'أمي');
-        setActiveChatRecipient(recipientName);
-        setCurrentScreen('whatsapp_chat');
-
-        // Trigger visual tap animation on contact & send
-        setHighlightedElement('com.whatsapp:id/send');
-        setActiveTapPoint({ x: 88, y: 89, label: 'findAndClick(com.whatsapp:id/send)' });
-
-        await new Promise((r) => setTimeout(r, 900));
-
-        // Add message into chat
-        const outgoingMsg = step.value ? String(step.value) : 'أنا في الطريق وراح أتأخر شوي';
-        const targetChatId = recipientName.includes('علي') ? 'chat-ali' : 'chat-mom';
-
-        setWhatsappChats((prev) =>
-          prev.map((c) => {
-            if (c.id === targetChatId) {
-              return {
-                ...c,
-                lastMessage: outgoingMsg,
-                time: 'الآن',
-                messages: [
-                  ...c.messages,
-                  {
-                    id: `m-${Date.now()}`,
-                    sender: 'أنا',
-                    text: outgoingMsg,
-                    time: 'الآن',
-                    isOutgoing: true,
-                    status: 'delivered',
-                  },
-                ],
-              };
-            }
-            return c;
-          })
-        );
-
-        addLog({
-          phase: 'ACCESSIBILITY_BRIDGE',
-          title: `إرسال رسالة واتساب إلى [${recipientName}] بنجاح`,
-          details: `تم تنفيذ Intent للواتساب والنقر التلقائي على زر الإرسال بواسطة SannaAccessibilityService.`,
-          status: 'success',
-        });
-      } else if (step.action === 'open_app') {
-        const target = String(step.target || '').toLowerCase();
-        if (target.includes('whatsapp') || target.includes('واتس')) {
-          setCurrentScreen('whatsapp');
-          setActiveTapPoint({ x: 25, y: 35, label: 'ACTION_CLICK(com.whatsapp)' });
-        } else if (target.includes('settings') || target.includes('إعدادات')) {
-          setCurrentScreen('settings');
-          setActiveTapPoint({ x: 50, y: 35, label: 'ACTION_CLICK(com.android.settings)' });
-        } else if (target.includes('clock') || target.includes('ساعة') || target.includes('منبه')) {
-          setCurrentScreen('clock');
-          setActiveTapPoint({ x: 75, y: 35, label: 'ACTION_CLICK(com.google.android.deskclock)' });
-        }
-
-        addLog({
-          phase: 'ACCESSIBILITY_BRIDGE',
-          title: `تشغيل التطبيق: ${step.target}`,
-          details: `تم إطلاق النشاط عبر PackageManager Intent.`,
-          status: 'success',
-        });
-      } else if (step.action === 'set_volume') {
-        const newVol = Number(step.value) || 100;
-        setVolumeLevel(newVol);
-        setActiveTapPoint({ x: 80, y: 8, label: `setMediaVolume(${newVol}%)` });
-
-        addLog({
-          phase: 'ACCESSIBILITY_BRIDGE',
-          title: `تعديل مستوى الصوت إلى ${newVol}%`,
-          details: `تم استدعاء AudioManager.STREAM_MUSIC عبر SannaAccessibilityBridge.kt`,
-          status: 'success',
-        });
-      } else if (step.action === 'set_timer' || step.action === 'set_alarm') {
-        const alarmTime = String(step.target || step.value || '07:00 ص');
-        setCurrentScreen('clock');
-        setAlarms((prev) => [
-          { id: `al-${Date.now()}`, time: alarmTime, label: 'منبه سنا الصوتي', enabled: true },
-          ...prev,
-        ]);
-        setActiveTapPoint({ x: 50, y: 30, label: 'AlarmClock.ACTION_SET_ALARM' });
-
-        addLog({
-          phase: 'ACCESSIBILITY_BRIDGE',
-          title: `ضبط المنبه: ${alarmTime}`,
-          details: `تم إرسال AlarmClock.ACTION_SET_ALARM للنظام.`,
-          status: 'success',
-        });
-      } else if (step.action === 'read_screen_text') {
-        setCurrentScreen('screen_reader');
-        setActiveTapPoint({ x: 50, y: 50, label: 'extractScreenText()' });
-
-        addLog({
-          phase: 'ACCESSIBILITY_BRIDGE',
-          title: 'قراءة وتحليل نصوص الشاشة النشطة',
-          details: `تم جمع عقد AccessibilityNodeInfo النصية للشاشة الحالية.`,
-          status: 'success',
-        });
-      } else if (step.action === 'click_by_text' || step.action === 'click_by_id') {
-        setActiveTapPoint({ x: 50, y: 50, label: `findAndClick(${step.target})` });
-        addLog({
-          phase: 'ACCESSIBILITY_BRIDGE',
-          title: `النقر على العنصر: ${step.target}`,
-          details: `تم العثور على العقدة وتنفيذ AccessibilityNodeInfo.ACTION_CLICK.`,
-          status: 'success',
-        });
-      }
-
-      // Step delay
-      await new Promise((r) => setTimeout(r, 700));
-      setActiveTapPoint(null);
-      setHighlightedElement(null);
-    }
-  };
-
-  // Node simulator click handler
-  const handleSimulateNodeClick = (nodeId: string, nodeText: string) => {
-    setActiveTapPoint({ x: 50, y: 50, label: `findAndClick("${nodeText || nodeId}")` });
-    setTimeout(() => setActiveTapPoint(null), 1000);
-
-    if (nodeId === 'com.whatsapp') {
-      setCurrentScreen('whatsapp');
-    } else if (nodeId === 'com.android.settings') {
-      setCurrentScreen('settings');
-    } else if (nodeId === 'com.google.android.deskclock') {
-      setCurrentScreen('clock');
-    } else if (nodeId === 'com.whatsapp:id/send') {
-      setCurrentScreen('whatsapp_chat');
-    }
-
-    addLog({
-      phase: 'ACCESSIBILITY_BRIDGE',
-      title: `محاكاة نقر يدوي: ${nodeText || nodeId}`,
-      details: `تم تنفيذ استدعاء SannaAccessibilityBridge.clickByText("${nodeText || nodeId}")`,
-      status: 'info',
-    });
-  };
-
-  // Manual chat send handler
-  const handleSimulatorManualSend = (chatId: string, text: string) => {
-    setWhatsappChats((prev) =>
-      prev.map((c) => {
-        if (c.id === chatId) {
-          return {
-            ...c,
-            lastMessage: text,
-            time: 'الآن',
-            messages: [
-              ...c.messages,
-              {
-                id: `m-${Date.now()}`,
-                sender: 'أنا',
-                text,
-                time: 'الآن',
-                isOutgoing: true,
-                status: 'delivered',
-              },
-            ],
-          };
-        }
-        return c;
-      })
-    );
-  };
-
   return (
     <div
-      className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950 flex flex-col"
-      dir={isArabicUI ? 'rtl' : 'ltr'}
+      className="relative min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950 flex flex-col justify-between overflow-x-hidden"
+      dir="rtl"
     >
-      {/* Top Application Bar */}
-      <Header
-        mode={mode}
-        onModeToggle={setMode}
-        dialect={dialect}
-        onDialectChange={setDialect}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        isArabicUI={isArabicUI}
-        onToggleUI={() => setIsArabicUI(!isArabicUI)}
+      {/* Background Image Layer with User's Photo */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none transition-all duration-700"
+        style={{
+          backgroundImage: `url(${customBg})`,
+          backgroundPosition: 'center 20%',
+        }}
       />
 
-      {/* Main Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-6">
-        {/* VIEW 1: LIVE SIMULATOR & VOICE WORKSPACE */}
-        {activeTab === 'simulator' && (
-          <div className="space-y-6">
-            {/* Top Grid: Voice Assistant Engine (Left/Right) + Live Android Simulator Phone */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              {/* Voice Orb & Assistant Control */}
-              <div className="lg:col-span-7 flex flex-col space-y-4">
-                <VoiceAssistantOrb
-                  isListening={isListening}
-                  isProcessing={isProcessing}
-                  isSpeaking={isSpeaking}
-                  transcript={transcript}
-                  agentSpeech={agentSpeech}
-                  mode={mode}
-                  dialect={dialect}
-                  onStartListening={handleStartListening}
-                  onStopListening={handleStopListening}
-                  onSendMessage={(txt) => handleUserMessage(txt)}
-                  isArabicUI={isArabicUI}
-                />
+      {/* Dark Gradient Overlay for Readability and Contrast */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-300"
+        style={{
+          backgroundColor: '#020617',
+          opacity: bgOpacity,
+        }}
+      />
+      <div className="fixed inset-0 z-0 bg-radial from-transparent via-slate-950/40 to-slate-950/90 pointer-events-none" />
 
-                {/* Dialect Quick Scenarios */}
-                <DialectPresets
-                  onSelectPreset={(text, d) => {
-                    setDialect(d);
-                    handleUserMessage(text, d);
-                  }}
-                  isArabicUI={isArabicUI}
-                />
-              </div>
+      {/* Top Header Bar with Settings Button */}
+      <div className="relative z-10">
+        <Header
+          dialect={dialect}
+          onDialectChange={setDialect}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          hasCustomKey={apiKeys.length > 0}
+        />
+      </div>
 
-              {/* Live Android 15 Device Simulator */}
-              <div className="lg:col-span-5 flex flex-col items-center justify-center">
-                <div className="w-full">
-                  <div className="flex items-center justify-between px-2 mb-2">
-                    <span className="text-xs font-bold text-slate-400">
-                      {isArabicUI ? 'محاكي جهاز أندرويد الحقيقي' : 'Android Device Simulation'}
-                    </span>
-                    <span className="text-[10px] text-cyan-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                      Pixel 9 Pro / Android 15
-                    </span>
-                  </div>
-                  <AndroidSimulator
-                    currentScreen={currentScreen}
-                    onScreenChange={setCurrentScreen}
-                    activeChatRecipient={activeChatRecipient}
-                    onSelectChat={setActiveChatRecipient}
-                    volumeLevel={volumeLevel}
-                    onVolumeChange={setVolumeLevel}
-                    wifiEnabled={wifiEnabled}
-                    onWifiToggle={() => setWifiEnabled(!wifiEnabled)}
-                    alarms={alarms}
-                    whatsappChats={whatsappChats}
-                    onSendMessage={handleSimulatorManualSend}
-                    activeTapPoint={activeTapPoint}
-                    highlightedElement={highlightedElement}
-                    isArabicUI={isArabicUI}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Main Single-Screen Voice Assistant View */}
+      <main className="relative z-10 flex-1 max-w-xl w-full mx-auto px-4 py-2 flex flex-col justify-center items-center">
+        <div className="w-full space-y-4">
+          {/* Central Glowing Voice Orb */}
+          <VoiceAssistantOrb
+            isListening={isListening}
+            isProcessing={isProcessing}
+            isSpeaking={isSpeaking}
+            transcript={transcript}
+            agentSpeech={agentSpeech}
+            dialect={dialect}
+            onStartListening={handleStartListening}
+            onStopListening={handleStopListening}
+            onSendMessage={(txt) => handleUserMessage(txt)}
+          />
 
-        {/* VIEW 2: ACCESSIBILITY NODE INSPECTOR */}
-        {activeTab === 'nodes' && (
-          <div className="h-[750px]">
-            <AccessibilityNodeViewer
-              currentScreen={currentScreen}
-              highlightedElement={highlightedElement}
-              onSimulateClick={handleSimulateNodeClick}
-              isArabicUI={isArabicUI}
-            />
-          </div>
-        )}
-
-        {/* VIEW 3: PIPELINE EXECUTION LOGS */}
-        {activeTab === 'logs' && (
-          <div className="h-[750px]">
-            <ExecutionLogs
-              logs={logs}
-              onClearLogs={() => setLogs([])}
-              isArabicUI={isArabicUI}
-            />
-          </div>
-        )}
-
-        {/* VIEW 4: SOURCE CODE REPOSITORY & ZIP EXPORTER */}
-        {activeTab === 'code' && (
-          <div className="min-h-[750px]">
-            <CodeExplorer isArabicUI={isArabicUI} />
-          </div>
-        )}
+          {/* Quick Voice Command Chips */}
+          <QuickCommands
+            onSelectCommand={(text, d) => {
+              if (d) setDialect(d);
+              handleUserMessage(text, d);
+            }}
+          />
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-4 px-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            {isArabicUI
-              ? 'مشروع سنا (Sanna AI) - مساعد صوتي ذكي عربي متكامل للأندرويد مع أتمتة إمكانية الوصول'
-              : 'Sanna AI - Production Arabic Voice Assistant & Android Accessibility Agent'}
-          </span>
-          <span className="font-mono text-cyan-400/80">
-            React Native + Kotlin Native Accessibility Service
-          </span>
+      {/* Owner Information & Direct Contact Footer */}
+      <footer className="relative z-10 py-3.5 px-4 text-center border-t border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-md mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Owner Info Badge */}
+          <div className="flex items-center gap-2.5 text-xs">
+            <div className="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+              <User className="w-4 h-4" />
+            </div>
+            <div className="text-right">
+              <span className="font-bold text-slate-100 block text-xs tracking-wide">المالك: {OWNER_NAME}</span>
+              <span className="text-[11px] text-cyan-400 font-mono tracking-wider dir-ltr block text-right font-medium">
+                {OWNER_PHONE}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions: Direct WhatsApp & Call (Without Edit Button) */}
+          <div className="flex items-center gap-2">
+            <a
+              href={OWNER_WHATSAPP}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              title="مراسلة المالك عبر واتساب"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>واتساب</span>
+            </a>
+
+            <a
+              href={`tel:${OWNER_PHONE}`}
+              className="flex items-center gap-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              title="اتصال هاتفي بالمالك"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>اتصال</span>
+            </a>
+          </div>
         </div>
       </footer>
+
+      {/* Settings Modal (Add Gemini API Keys, Audio, Wake Words & Background) */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        apiKeys={apiKeys}
+        onAddApiKey={handleAddApiKey}
+        onRemoveApiKey={handleRemoveApiKey}
+        activeApiKeyIndex={activeApiKeyIndex}
+        onSelectActiveKey={setActiveApiKeyIndex}
+        mode={mode}
+        onModeChange={setMode}
+        dialect={dialect}
+        onDialectChange={setDialect}
+        speechRate={speechRate}
+        onSpeechRateChange={setSpeechRate}
+        speechPitch={speechPitch}
+        onSpeechPitchChange={setSpeechPitch}
+        wakeWords={wakeWords}
+        onAddWakeWord={handleAddWakeWord}
+        onRemoveWakeWord={handleRemoveWakeWord}
+        soundEffects={soundEffects}
+        onToggleSoundEffects={() => setSoundEffects(!soundEffects)}
+        bgOpacity={bgOpacity}
+        onBgOpacityChange={setBgOpacity}
+        onCustomBgUpload={setCustomBg}
+      />
     </div>
   );
 }

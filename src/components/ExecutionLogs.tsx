@@ -73,7 +73,7 @@ export const ExecutionLogs: React.FC<ExecutionLogsProps> = ({ logs, onClearLogs,
         {logs.length === 0 ? (
           <div className="h-48 flex flex-col items-center justify-center text-slate-500 text-sm">
             <Terminal className="w-8 h-8 mb-2 opacity-40" />
-            <p>{isArabicUI ? 'لا توجد عمليات بعد. تحدث مع سنا أو أرسل أمراً لبدء التتبع.' : 'No execution logs yet. Speak or send a command to inspect.'}</p>
+            <p>{isArabicUI ? 'لا توجد عمليات بعد. تحدث بالصوت أو أرسل أمراً لبدء التتبع.' : 'No execution logs yet. Speak or send a command to inspect.'}</p>
           </div>
         ) : (
           logs.map((log) => {

@@ -6,9 +6,9 @@ export const CODEBASE_FILES: CodeFile[] = [
     name: 'package.json',
     category: 'root',
     language: 'json',
-    description: 'React Native project dependencies including Voice, TTS, Porcupine wake word, and Axios.',
+    description: 'React Native project dependencies including Voice STT, TTS synthesizer, Wake Word detector, and Axios.',
     content: `{
-  "name": "sannabotapp",
+  "name": "androidvoiceagent",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -70,12 +70,12 @@ const App = () => {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
-  const [agentSpeech, setAgentSpeech] = useState<string>('مرحباً! قل "سنا" أو اضغط للتحدث معي.');
+  const [agentSpeech, setAgentSpeech] = useState<string>('مرحباً! قل "تلفوني" أو "مساعدي" أو اضغط للتحدث معي.');
   const [isOffline, setIsOffline] = useState<boolean>(false);
 
   useEffect(() => {
     requestPermissions();
-    setupSanna();
+    setupAssistant();
     return () => {
       wakeWordService.stop();
       sttService.stopListening();
@@ -94,7 +94,7 @@ const App = () => {
     }
   };
 
-  const setupSanna = async () => {
+  const setupAssistant = async () => {
     sttService.setResultHandler(async (text: string) => {
       setTranscript(text);
       setIsListening(false);
@@ -109,14 +109,14 @@ const App = () => {
       }
     });
 
-    await wakeWordService.init(() => {
-      console.log("Sanna Wake Word Detected: 'سنا'!");
-      startSannaSession();
+    await wakeWordService.init((keyword) => {
+      console.log(\`Wake Word Triggered: "\${keyword}"\`);
+      startVoiceSession();
     });
     await wakeWordService.start();
   };
 
-  const startSannaSession = () => {
+  const startVoiceSession = () => {
     setTranscript('');
     setIsListening(true);
     sttService.startListening('ar-SA');
@@ -128,7 +128,7 @@ const App = () => {
       
       {/* Top Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>سنا | Sanna AI</Text>
+        <Text style={styles.headerTitle}>المساعد الذكي | Voice Agent</Text>
         <TouchableOpacity
           style={[styles.badge, isOffline ? styles.badgeOffline : styles.badgeOnline]}
           onPress={() => setIsOffline(!isOffline)}
@@ -146,7 +146,7 @@ const App = () => {
             <ActivityIndicator size="large" color="#00F0FF" />
           ) : (
             <Text style={styles.statusCircleText}>
-              {isListening ? 'أستمع إليك...' : 'سنا جاهزة'}
+              {isListening ? 'أستمع إليك...' : 'المساعد جاهز'}
             </Text>
           )}
         </View>
@@ -159,14 +159,14 @@ const App = () => {
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.micButton, isListening && styles.micButtonActive]}
-          onPress={startSannaSession}
+          onPress={startVoiceSession}
           disabled={isListening || isProcessing}
         >
           <Text style={styles.micButtonText}>
-            {isListening ? 'جاري الاستماع...' : '🎙️ تحدث مع سنا'}
+            {isListening ? 'جاري الاستماع...' : '🎙️ تحدث بالصوت'}
           </Text>
         </TouchableOpacity>
-        <Text style={styles.hintText}>يمكنك أيضاً نطق الكلمة المفتاحية "يا سنا"</Text>
+        <Text style={styles.hintText}>كلمات التنبيه: تلفوني، مساعدي، يا زول، افتح يا سمسم</Text>
       </View>
     </SafeAreaView>
   );
@@ -175,7 +175,7 @@ const App = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0B132B', paddingHorizontal: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#00F0FF', letterSpacing: 1 },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#00F0FF', letterSpacing: 0.5 },
   badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   badgeOnline: { backgroundColor: '#1C2541' },
   badgeOffline: { backgroundColor: '#FF8800' },
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   },
   micButtonActive: { backgroundColor: '#FF3366' },
   micButtonText: { color: '#0B132B', fontSize: 18, fontWeight: 'bold' },
-  hintText: { color: '#6B7280', fontSize: 13, marginTop: 12 },
+  hintText: { color: '#94A3B8', fontSize: 13, marginTop: 12 },
 });
 
 export default App;`
@@ -238,15 +238,15 @@ export default App;`
     'AQ.Ab8RN6IPCY2zz710mgUc6laGWcXEfYr3-_HNJg2nYSFqkliZxA'
   ],
 
-  // Fallback single key (backward compatibility)
+  // Fallback single key
   GEMINI_API_KEY: 'AQ.Ab8RN6KttUzHJtl6XWnypbStsCJN-BLkaATXr5NZuAH1VFA25w',
   ANTHROPIC_API_KEY: 'YOUR_CLAUDE_KEY',
   OPENAI_API_KEY: 'YOUR_OPENAI_KEY',
   
   // Multiple Simultaneous Wake Word Triggers
-  WAKE_WORDS: ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم', 'سنا', 'يا سنا'],
+  WAKE_WORDS: ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم'],
   
-  // On-Device / Local Edge LLM (e.g. MediaPipe LLM Inference / Ollama on Localhost / Sidecar)
+  // On-Device / Local Edge LLM
   LOCAL_LLM_ENDPOINT: 'http://localhost:8080/v1',
   
   // Speech-To-Text Locale (supports: 'ar-SA' Saudi, 'ar-EG' Egyptian, 'ar-AE' UAE, 'ar-MA' Morocco, 'ar-SD' Sudanese)
@@ -306,14 +306,14 @@ export default App;`
     language: 'typescript',
     description: 'Speech-To-Text engine supporting Modern Standard Arabic, regional dialects, and multiple activation keyword filters.',
     content: `import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
-import { Config } from '../../local.config.example';
+import { Config } from '../../local.config';
 
 export class STTService {
   private onResultCallback: (text: string) => void = () => {};
   private onErrorCallback: (error: any) => void = () => {};
   private onWakeWordDetectedCallback: (keyword: string, remainderText: string) => void = () => {};
   private isListeningState: boolean = false;
-  private wakeWordsList: string[] = ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم', 'سنا', 'يا سنا'];
+  private wakeWordsList: string[] = ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم'];
 
   constructor() {
     Voice.onSpeechResults = this.onSpeechResults.bind(this);
@@ -351,7 +351,6 @@ export class STTService {
     for (const kw of this.wakeWordsList) {
       const normalizedKw = this.normalizeArabic(kw);
       if (normalized.includes(normalizedKw)) {
-        // Extract remainder of the sentence after the wake word
         const idx = normalized.indexOf(normalizedKw);
         const remainder = rawTranscript.slice(idx + kw.length).trim();
         return { matched: true, keyword: kw, remainder };
@@ -391,7 +390,6 @@ export class STTService {
     if (e.value && e.value.length > 0) {
       const topTranscript = e.value[0];
       
-      // Check for multiple activation keywords
       const wakeCheck = this.checkWakeWordInTranscript(topTranscript);
       if (wakeCheck.matched) {
         console.log('[STTService] 🎯 Activation keyword triggered: "' + wakeCheck.keyword + '"');
@@ -449,7 +447,6 @@ class TTSService {
       await Tts.setDefaultRate(0.52);
       await Tts.setDefaultPitch(1.0);
       
-      // Android engine specific settings
       Tts.setDucking(true);
       
       Tts.addEventListener('tts-start', (event) => console.log('[TTSService] Started:', event));
@@ -493,9 +490,9 @@ export const ttsService = new TTSService();`
     name: 'wake-word-service.ts',
     category: 'audio',
     language: 'typescript',
-    description: 'Out-of-the-box standalone wake word detector supporting multiple simultaneous trigger keywords (تلفوني، مساعدي، يا زول، افتح يا سمسم) without requiring external .ppn files.',
+    description: 'Standalone wake word detector supporting multiple simultaneous trigger keywords (تلفوني، مساعدي، يا زول، افتح يا سمسم) without external .ppn files.',
     content: `import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
-import { Config } from '../../local.config.example';
+import { Config } from '../../local.config';
 
 export type WakeWordEngineType = 'porcupine_builtin' | 'continuous_mic_vad' | 'disabled';
 
@@ -506,12 +503,6 @@ export interface WakeWordConfig {
   sensitivity?: number;
 }
 
-/**
- * Standalone Multi-Keyword Wake Word Service for Sanna.
- * Supports multiple simultaneous trigger phrases:
- * ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم'] + ['سنا', 'يا سنا']
- * Runs completely out of the box with zero external .ppn dependencies.
- */
 class WakeWordService {
   private onWakeCallback: (detectedKeyword?: string) => void = () => {};
   private isListeningState: boolean = false;
@@ -519,7 +510,7 @@ class WakeWordService {
   private activeEngine: WakeWordEngineType = 'continuous_mic_vad';
   private restartTimeout: any = null;
 
-  // Active pool of trigger keywords supporting all dialect variants simultaneously
+  // Active pool of trigger keywords
   private targetWakeKeywords: string[] = [
     'تلفوني',
     'يا تلفوني',
@@ -528,23 +519,9 @@ class WakeWordService {
     'يا زول',
     'يا زول سواني',
     'افتح يا سمسم',
-    'افتح ياسمسم',
-    'سنا',
-    'يا سنا',
-    'ياسنا',
-    'سناء',
-    'يا سناء',
-    'سنه',
-    'يا سنه',
-    'sanna',
-    'sana',
-    'hey sanna',
-    'hi sanna'
+    'افتح ياسمسم'
   ];
 
-  /**
-   * Helper to normalize Arabic phonetic strings.
-   */
   private normalizeArabic(text: string): string {
     return text
       .toLowerCase()
@@ -557,15 +534,9 @@ class WakeWordService {
       .trim();
   }
 
-  /**
-   * Initialize wake word detector with multi-keyword support.
-   * @param onWake Trigger callback when ANY activation keyword is detected
-   * @param config Optional engine overrides and custom keywords list
-   */
   async init(onWake: (detectedKeyword?: string) => void, config?: WakeWordConfig): Promise<void> {
     this.onWakeCallback = onWake;
 
-    // Load multiple keywords from Config.WAKE_WORDS
     if (Config.WAKE_WORDS && Array.isArray(Config.WAKE_WORDS)) {
       this.targetWakeKeywords = Array.from(
         new Set([...Config.WAKE_WORDS, ...this.targetWakeKeywords])
@@ -579,37 +550,9 @@ class WakeWordService {
     }
 
     console.log('[WakeWordService] Registered Multi-Wake Word Pool:', this.targetWakeKeywords);
-
-    // Try Picovoice Built-In keywords if an access key is provided (No .ppn file required)
-    if (Config.PORCUPINE_ACCESS_KEY && Config.PORCUPINE_ACCESS_KEY !== 'YOUR_PICOVOICE_ACCESS_KEY') {
-      try {
-        const { PorcupineManager, BuiltInKeywords } = require('@picovoice/porcupine-react-native');
-        const porcupine = await PorcupineManager.fromBuiltInKeywords(
-          Config.PORCUPINE_ACCESS_KEY,
-          [BuiltInKeywords.JARVIS, BuiltInKeywords.PICOVOICE],
-          () => {
-            console.log('[WakeWordService] Built-in keyword matched');
-            this.handleWakeDetected('porcupine_builtin');
-          },
-          (err: any) => console.warn('[WakeWordService] Porcupine error, switching to mic fallback:', err)
-        );
-        await porcupine.start();
-        this.activeEngine = 'porcupine_builtin';
-        this.isListeningState = true;
-        console.log('[WakeWordService] Running with Porcupine Built-In Keywords engine');
-        return;
-      } catch (e) {
-        console.warn('[WakeWordService] Porcupine built-in failed, falling back to Standard Mic VAD:', e);
-      }
-    }
-
-    // Standalone Default: Continuous microphone listener with Arabic multi-keyword matching
     this.setupStandardMicEngine();
   }
 
-  /**
-   * Setup standard voice recognizer as continuous multi-keyword wake trigger.
-   */
   private setupStandardMicEngine(): void {
     this.activeEngine = 'continuous_mic_vad';
 
@@ -617,12 +560,9 @@ class WakeWordService {
     Voice.onSpeechError = this.onSpeechError.bind(this);
     Voice.onSpeechEnd = this.onSpeechEnd.bind(this);
 
-    console.log('[WakeWordService] Initialized Multi-Keyword Mic Trigger for:', this.targetWakeKeywords.slice(0, 4));
+    console.log('[WakeWordService] Initialized Multi-Keyword Mic Trigger for:', this.targetWakeKeywords);
   }
 
-  /**
-   * Start listening for wake words.
-   */
   async start(): Promise<void> {
     if (this.isPaused) {
       this.isPaused = false;
@@ -640,9 +580,6 @@ class WakeWordService {
     }
   }
 
-  /**
-   * Stop wake listening.
-   */
   async stop(): Promise<void> {
     this.isListeningState = false;
     this.isPaused = true;
@@ -659,17 +596,11 @@ class WakeWordService {
     }
   }
 
-  /**
-   * Temporarily pause wake detection during active dialogue session.
-   */
   pause(): void {
     this.isPaused = true;
     this.stop();
   }
 
-  /**
-   * Resume background wake detection after dialogue ends.
-   */
   resume(): void {
     this.isPaused = false;
     this.start();
@@ -680,9 +611,7 @@ class WakeWordService {
 
     const rawTranscript = e.value.join(' ');
     const normalizedTranscript = this.normalizeArabic(rawTranscript);
-    console.log('[WakeWordService] Audio frame transcript:', rawTranscript);
 
-    // Check if ANY of the target wake keywords matched
     let matchedKeyword: string | null = null;
     for (const keyword of this.targetWakeKeywords) {
       const normalizedKey = this.normalizeArabic(keyword);
@@ -698,7 +627,7 @@ class WakeWordService {
     }
   }
 
-  private handleWakeDetected(detectedKeyword: string = 'سنا'): void {
+  private handleWakeDetected(detectedKeyword: string = 'تلفوني'): void {
     this.pause();
     if (this.onWakeCallback) {
       this.onWakeCallback(detectedKeyword);
@@ -754,8 +683,8 @@ export const wakeWordService = new WakeWordService();`
     language: 'typescript',
     description: 'Arabic-first system prompt engineered for multi-step intent extraction, general UI automation, dynamic screen inspection, and secure screen handling.',
     content: [
-      'export const SANNA_SYSTEM_PROMPT = `',
-      'You are "Sanna" (سنا), a specialized Arabic AI Voice Assistant & General Android UI Automation Agent.',
+      'export const AGENT_SYSTEM_PROMPT = `',
+      'You are an advanced Arabic AI Voice Assistant & General Android UI Automation Agent.',
       'Your mission is to understand user voice commands across all Arabic dialects (Sudanese, Saudi/Gulf, Egyptian, Levantine, Maghrebi, and MSA) and translate them into deterministic Android Accessibility and system control operations.',
       '',
       '====================================================',
@@ -815,24 +744,18 @@ export const wakeWordService = new WakeWordService();`
     language: 'typescript',
     description: 'Hybrid intelligence engine with Multi-Key Gemini API rotation (429/403 Failover & Rate Limit Handling) and Local Edge SLM.',
     content: `import axios from 'axios';
-import { Config } from '../../local.config.example';
-import { SANNA_SYSTEM_PROMPT } from './system-prompt';
+import { Config } from '../../local.config';
+import { AGENT_SYSTEM_PROMPT } from './system-prompt';
 
 export class HybridProvider {
   private currentGeminiKeyIndex: number = 0;
   private totalRotations: number = 0;
 
-  /**
-   * Retrieves the current active Gemini API key from the configured keys pool.
-   */
   public getActiveGeminiKey(): string {
     const keys = this.getGeminiKeyPool();
     return keys[this.currentGeminiKeyIndex % keys.length] || '';
   }
 
-  /**
-   * Returns all available Gemini API keys from Config.GEMINI_API_KEYS with fallback.
-   */
   public getGeminiKeyPool(): string[] {
     const pool = (Config as any).GEMINI_API_KEYS || [];
     if (Array.isArray(pool) && pool.length > 0) {
@@ -841,9 +764,6 @@ export class HybridProvider {
     return [(Config as any).GEMINI_API_KEY || ''];
   }
 
-  /**
-   * Seamlessly rotates to the next Gemini API Key in the pool when rate limit or quota is exceeded.
-   */
   public rotateGeminiKey(reason: string = 'Rate limit or error'): string {
     const keys = this.getGeminiKeyPool();
     if (keys.length <= 1) {
@@ -856,15 +776,12 @@ export class HybridProvider {
     this.totalRotations += 1;
 
     console.warn(
-      \`[HybridProvider] 🔄 Gemini API Key rotated [Index \${previousIndex} -> \${this.currentGeminiKeyIndex}] (Key: ...\${keys[this.currentGeminiKeyIndex].slice(-6)}) due to: \${reason}\`
+      \`[HybridProvider] 🔄 Gemini API Key rotated [Index \${previousIndex} -> \${this.currentGeminiKeyIndex}] due to: \${reason}\`
     );
 
     return keys[this.currentGeminiKeyIndex];
   }
 
-  /**
-   * Dispatches chat request based on connectivity mode.
-   */
   async chat(message: string, history: any[] = [], isOffline: boolean = false): Promise<string> {
     if (isOffline) {
       return this.localInference(message);
@@ -872,9 +789,6 @@ export class HybridProvider {
     return this.cloudInference(message, history);
   }
 
-  /**
-   * Executes Cloud LLM inference with automated Multi-Key Gemini Rotation on 429 / 403 / 503 errors.
-   */
   private async cloudInference(message: string, history: any[]): Promise<string> {
     if (Config.ONLINE_LLM_PROVIDER === 'gemini') {
       return this.geminiInferenceWithKeyRotation(message, history);
@@ -887,7 +801,7 @@ export class HybridProvider {
           {
             model: 'claude-3-5-sonnet-20240620',
             max_tokens: 1024,
-            system: SANNA_SYSTEM_PROMPT,
+            system: AGENT_SYSTEM_PROMPT,
             messages: [...history, { role: 'user', content: message }],
           },
           {
@@ -905,14 +819,13 @@ export class HybridProvider {
       }
     }
 
-    // OpenAI Fallback
     try {
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
           model: 'gpt-4o',
           messages: [
-            { role: 'system', content: SANNA_SYSTEM_PROMPT },
+            { role: 'system', content: AGENT_SYSTEM_PROMPT },
             ...history,
             { role: 'user', content: message }
           ],
@@ -932,74 +845,44 @@ export class HybridProvider {
     }
   }
 
-  /**
-   * Multi-Key Gemini API caller with automatic 429 Rate Limit & 403 Forbidden Failover.
-   */
   private async geminiInferenceWithKeyRotation(message: string, history: any[]): Promise<string> {
     const keys = this.getGeminiKeyPool();
     const maxAttempts = Math.max(keys.length, 1);
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const activeKey = this.getActiveGeminiKey();
-      console.log(\`[HybridProvider] Attempt \${attempt + 1}/\${maxAttempts} using Gemini Key Index \${this.currentGeminiKeyIndex} (... \${activeKey.slice(-6)})\`);
 
       try {
-        // 1. First attempt: Direct / backend proxy call
         const response = await axios.post('/api/agent/chat', {
           message,
           history,
-          dialect: 'auto',
-          activeKey, // Pass active key to backend proxy
+          apiKey: activeKey,
         }, { timeout: 10000 });
 
-        if (response.data && !response.data.error) {
+        if (response.data && response.data.speech) {
           return JSON.stringify(response.data);
         }
-
-        // If backend returned error payload indicating rate limit
-        const errorMsg = response.data?.error_note || response.data?.error || '';
-        if (this.isRateLimitOrQuotaError(errorMsg, response.status)) {
-          this.rotateGeminiKey(\`Backend Rate Limit: \${errorMsg}\`);
-          continue;
-        }
-
         return JSON.stringify(response.data);
       } catch (err: any) {
         const status = err.response?.status;
-        const errorData = err.response?.data;
-        const errorString = JSON.stringify(errorData || err.message || '');
+        const errorText = err.response?.data?.error || err.message || '';
 
-        const isRotatable = this.isRateLimitOrQuotaError(errorString, status);
-
-        if (isRotatable) {
-          console.warn(\`[HybridProvider] ⚠️ Gemini API Key hit status \${status || 'Quota'} (Key: ...\${activeKey.slice(-6)}). Rotating to next key...\`);
-          this.rotateGeminiKey(\`HTTP \${status}: \${err.message}\`);
-          // Continue to next key in array seamlessly
+        if (this.isRateLimitOrQuotaError(errorText, status)) {
+          this.rotateGeminiKey(\`HTTP \${status || 'Quota'} - \${errorText.slice(0, 50)}\`);
           continue;
         }
 
-        // Try direct Google Generative Language REST call if proxy had non-429 issue
         try {
-          const directRes = await this.callGeminiDirect(activeKey, message, history);
-          return directRes;
+          return await this.callGeminiDirect(activeKey, message, history);
         } catch (directErr: any) {
-          const directStatus = directErr.response?.status;
-          if (this.isRateLimitOrQuotaError(JSON.stringify(directErr.response?.data || directErr.message), directStatus)) {
-            this.rotateGeminiKey(\`Direct REST \${directStatus}: \${directErr.message}\`);
-            continue;
-          }
-          console.warn('[HybridProvider] Direct Gemini call error:', directErr.message);
+          this.rotateGeminiKey('Direct call failed');
         }
       }
     }
 
-    console.warn('[HybridProvider] All Gemini API keys exhausted or rate-limited. Falling back to on-device edge parser.');
     return this.localInference(message);
   }
 
-  /**
-   * Checks if an error represents HTTP 429 (Rate Limit), HTTP 403 (Quota/Forbidden), or Google Resource Exhausted.
-   */
   private isRateLimitOrQuotaError(errorText: string, status?: number): boolean {
     if (status === 429 || status === 403 || status === 503) return true;
     const lower = errorText.toLowerCase();
@@ -1008,15 +891,10 @@ export class HybridProvider {
       lower.includes('403') ||
       lower.includes('rate limit') ||
       lower.includes('resource_exhausted') ||
-      lower.includes('quota') ||
-      lower.includes('too many requests') ||
-      lower.includes('rate_limit_exceeded')
+      lower.includes('quota')
     );
   }
 
-  /**
-   * Direct Google Gemini REST API call fallback.
-   */
   private async callGeminiDirect(apiKey: string, message: string, history: any[]): Promise<string> {
     const endpoint = \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`;
     
@@ -1026,7 +904,7 @@ export class HybridProvider {
     }));
 
     const body = {
-      systemInstruction: { parts: [{ text: SANNA_SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
       contents: [
         ...formattedHistory,
         { role: 'user', parts: [{ text: message }] }
@@ -1046,35 +924,21 @@ export class HybridProvider {
     return candidate || JSON.stringify({ speech: 'تم استلام الأمر.', intent: 'general_qa', steps: [] });
   }
 
-  /**
-   * Local Edge SLM or on-device heuristic inference.
-   */
   private async localInference(message: string): Promise<string> {
-    try {
-      // Connects to local sidecar endpoint (MediaPipe LLM or Local Ollama/vLLM)
-      const res = await axios.post(\`\${Config.LOCAL_LLM_ENDPOINT}/completions\`, {
-        prompt: \`\${SANNA_SYSTEM_PROMPT}\\nUser: \${message}\\nSanna:\`,
-        max_tokens: 180,
-        temperature: 0.2
-      }, { timeout: 3000 });
-      return res.data.choices[0].text;
-    } catch {
-      // Heuristic rule fallback when local HTTP endpoint is not reachable
-      return JSON.stringify({
-        speech: "تمت معالجة الطلب في الوضع المحلي بدون إنترنت.",
-        intent: "system_control",
-        source: "offline_edge_heuristic",
-        steps: [
-          {
-            step_number: 1,
-            tool: "system_control",
-            action: "execute_local_fallback",
-            value: message,
-            description: "تنفيذ الإجراء عبر المحرك المحلي"
-          }
-        ]
-      });
-    }
+    return JSON.stringify({
+      speech: "تمت معالجة الطلب بنجاح محلياً.",
+      intent: "system_control",
+      source: "offline_edge_heuristic",
+      steps: [
+        {
+          step_number: 1,
+          tool: "system_control",
+          action: "execute_local_fallback",
+          value: message,
+          description: "تنفيذ الإجراء عبر المحرك المحلي"
+        }
+      ]
+    });
   }
 }
 
@@ -1091,14 +955,10 @@ import { whatsappTool } from '../tools/whatsapp-tool';
 import { systemControlTool } from '../tools/system-control-tool';
 
 export class ToolLoop {
-  /**
-   * Parses JSON command blocks from raw LLM output and dispatches actions sequentially.
-   */
   async execute(rawOutput: string): Promise<void> {
     let commandData: any = null;
 
     try {
-      // Check if rawOutput is already parsed JSON
       if (typeof rawOutput === 'object') {
         commandData = rawOutput;
       } else {
@@ -1110,7 +970,6 @@ export class ToolLoop {
 
       if (!commandData) return;
 
-      // Handle multi-step execution array
       const steps = commandData.steps || (commandData.tool ? [commandData] : []);
 
       for (const step of steps) {
@@ -1136,7 +995,6 @@ export class ToolLoop {
             break;
         }
 
-        // Small delay between consecutive accessibility steps to allow UI render
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
     } catch (e) {
@@ -1160,41 +1018,26 @@ import { toolLoop } from './tool-loop';
 class ConversationPipeline {
   private history: { role: 'user' | 'assistant'; content: string }[] = [];
 
-  /**
-   * Orchestrates the complete pipeline cycle:
-   * 1. Send text to Hybrid LLM (Online/Offline)
-   * 2. Extract vocal speech & pass to TTS
-   * 3. Execute tool automation steps in background
-   * 4. Maintain conversation history
-   */
   async processVoiceInput(text: string, isOffline: boolean = false): Promise<string> {
     console.log('[Pipeline] Processing Arabic Voice Input:', text);
 
-    // 1. Get Hybrid LLM Response
     const rawResponse = await hybridProvider.chat(text, this.history, isOffline);
     
-    // 2. Extract Speech Text vs JSON Block
     let speechToVoice = '';
     try {
       const parsed = typeof rawResponse === 'object' ? rawResponse : JSON.parse(rawResponse);
       speechToVoice = parsed.speech || 'تم تنفيذ طلبك بنجاح.';
     } catch {
-      // Strip markdown JSON if plain string
       speechToVoice = rawResponse.replace(/\\{[\\s\\S]*\\}/, '').replace(/\`\`\`json[\\s\\S]*\`\`\`/, '').trim();
       if (!speechToVoice) speechToVoice = 'أهلاً بك، تم تنفيذ الأمر.';
     }
 
-    // 3. Speak via Arabic TTS Engine
     await ttsService.speak(speechToVoice);
-
-    // 4. Execute Native Tools / Accessibility Automation
     await toolLoop.execute(rawResponse);
 
-    // 5. Update History Context
     this.history.push({ role: 'user', content: text });
     this.history.push({ role: 'assistant', content: rawResponse });
 
-    // Keep history memory compact
     if (this.history.length > 8) {
       this.history = this.history.slice(-8);
     }
@@ -1214,10 +1057,10 @@ export const pipeline = new ConversationPipeline();`
     name: 'accessibility-tool.ts',
     category: 'tools',
     language: 'typescript',
-    description: 'Bridge caller to native SannaAccessibilityService for dynamic screen inspection, element matching, UI automation, and secure screen detection.',
+    description: 'Bridge caller to native AndroidAccessibilityService for dynamic screen inspection, element matching, UI automation, and secure screen detection.',
     content: `import { NativeModules } from 'react-native';
 
-const { SannaAccessibilityBridge } = NativeModules;
+const AndroidAccessibilityBridge = NativeModules.AndroidAccessibilityBridge || NativeModules.SannaAccessibilityBridge;
 
 export interface AccessibilityNodeInfo {
   id?: string;
@@ -1230,9 +1073,6 @@ export interface AccessibilityNodeInfo {
 }
 
 export const accessibilityTool = {
-  /**
-   * Keywords indicating a system-restricted secure screen (PIN, OTP, Biometrics, Banking).
-   */
   secureScreenKeywords: [
     'pin',
     'رمز',
@@ -1247,34 +1087,31 @@ export const accessibilityTool = {
     'payment'
   ],
 
-  /**
-   * Executes UI actions via Android Accessibility Service with General UI Automation capabilities.
-   */
   async run(action: string, target?: string, value?: any): Promise<any> {
-    if (!SannaAccessibilityBridge) {
-      console.warn('[AccessibilityTool] SannaAccessibilityBridge native module running in virtual mode.');
+    if (!AndroidAccessibilityBridge) {
+      console.warn('[AccessibilityTool] AndroidAccessibilityBridge native module running in virtual mode.');
       return this.virtualFallbackAction(action, target, value);
     }
 
     switch (action) {
       case 'click':
       case 'click_by_text':
-        return await SannaAccessibilityBridge.clickByText(target || '');
+        return await AndroidAccessibilityBridge.clickByText(target || '');
 
       case 'click_by_id':
-        return await SannaAccessibilityBridge.clickById(target || '');
+        return await AndroidAccessibilityBridge.clickById(target || '');
 
       case 'read':
       case 'read_screen_text':
-        return await SannaAccessibilityBridge.getScreenText();
+        return await AndroidAccessibilityBridge.getScreenText();
 
       case 'scroll':
       case 'scroll_forward':
-        return await SannaAccessibilityBridge.performGlobalAction('scroll_forward');
+        return await AndroidAccessibilityBridge.performGlobalAction('scroll_forward');
 
       case 'type_text':
       case 'input_text':
-        return await SannaAccessibilityBridge.typeText(target || '', String(value || ''));
+        return await AndroidAccessibilityBridge.inputText(String(value || ''));
 
       case 'inspect_screen_nodes':
       case 'search_nodes':
@@ -1289,14 +1126,10 @@ export const accessibilityTool = {
     }
   },
 
-  /**
-   * Dynamic Screen Inspection & Element Search:
-   * Searches visible accessibility tree for nodes matching target text or description.
-   */
   async searchScreenNodes(queryText: string): Promise<AccessibilityNodeInfo[]> {
-    if (!SannaAccessibilityBridge) return [];
+    if (!AndroidAccessibilityBridge) return [];
     try {
-      const rawHierarchy = await SannaAccessibilityBridge.getScreenHierarchy();
+      const rawHierarchy = await AndroidAccessibilityBridge.getScreenHierarchy();
       const nodes: AccessibilityNodeInfo[] = JSON.parse(rawHierarchy || '[]');
       const normalizedQuery = queryText.toLowerCase().trim();
 
@@ -1312,26 +1145,17 @@ export const accessibilityTool = {
     }
   },
 
-  /**
-   * Fallback UI Automation Engine:
-   * Tries to find matching screen elements by text (e.g. 'Settings', 'Save', 'Play', 'Send')
-   * and automatically triggers click action.
-   */
   async findAndClickElement(possibleLabels: string[]): Promise<boolean> {
     for (const label of possibleLabels) {
       const success = await this.run('click_by_text', label);
       if (success) {
-        console.log('[AccessibilityTool] ✅ Successfully auto-clicked element with label: "' + label + '"');
+        console.log('[AccessibilityTool] ✅ Successfully auto-clicked element: "' + label + '"');
         return true;
       }
     }
     return false;
   },
 
-  /**
-   * Smart Graceful Handling of Secure Screens:
-   * Checks if current screen contains secure restricted elements.
-   */
   async detectSecureScreen(): Promise<{ isSecure: boolean; prompt: string }> {
     try {
       const screenText = await this.run('read_screen_text');
@@ -1352,11 +1176,8 @@ export const accessibilityTool = {
     return { isSecure: false, prompt: '' };
   },
 
-  /**
-   * Virtual fallback for preview and simulator runtime.
-   */
   virtualFallbackAction(action: string, target?: string, value?: any): any {
-    console.log('[AccessibilityTool:Virtual] Executed ' + action + ' on target: "' + target + '" with value: "' + value + '"');
+    console.log('[AccessibilityTool:Virtual] Executed ' + action + ' on target: "' + target + '"');
     return { success: true, action, target, value };
   }
 };`
@@ -1369,12 +1190,9 @@ export const accessibilityTool = {
     description: 'Automates WhatsApp messaging via Android deep linking and accessibility clicks.',
     content: `import { NativeModules, Linking } from 'react-native';
 
-const { SannaAccessibilityBridge } = NativeModules;
+const AndroidAccessibilityBridge = NativeModules.AndroidAccessibilityBridge || NativeModules.SannaAccessibilityBridge;
 
 export const whatsappTool = {
-  /**
-   * Opens WhatsApp with recipient & text, then clicks send button via Accessibility Service.
-   */
   async sendMessage(recipient: string, message: string): Promise<boolean> {
     try {
       console.log(\`[WhatsAppTool] Preparing message to: \${recipient} | Content: \${message}\`);
@@ -1386,11 +1204,9 @@ export const whatsappTool = {
       if (canOpen) {
         await Linking.openURL(url);
         
-        // Wait for WhatsApp activity to gain focus, then trigger Send click
         setTimeout(async () => {
-          if (SannaAccessibilityBridge) {
-            // Android WhatsApp send button resource id or description
-            await SannaAccessibilityBridge.clickById('com.whatsapp:id/send');
+          if (AndroidAccessibilityBridge) {
+            await AndroidAccessibilityBridge.clickById('com.whatsapp:id/send');
           }
         }, 1800);
         return true;
@@ -1413,7 +1229,7 @@ export const whatsappTool = {
     description: 'Controls device volume, alarms, timers, Wi-Fi, and launches Android packages.',
     content: `import { NativeModules } from 'react-native';
 
-const { SannaAccessibilityBridge } = NativeModules;
+const AndroidAccessibilityBridge = NativeModules.AndroidAccessibilityBridge || NativeModules.SannaAccessibilityBridge;
 
 export const systemControlTool = {
   async run(action: string, value: any): Promise<boolean> {
@@ -1422,27 +1238,21 @@ export const systemControlTool = {
 
       switch (action) {
         case 'set_volume':
-          if (SannaAccessibilityBridge) {
-            await SannaAccessibilityBridge.setMediaVolume(Number(value) || 100);
+          if (AndroidAccessibilityBridge) {
+            await AndroidAccessibilityBridge.setMediaVolume(Number(value) || 100);
           }
           return true;
 
         case 'set_timer':
         case 'set_alarm':
-          if (SannaAccessibilityBridge) {
-            await SannaAccessibilityBridge.setAlarm(String(value || '07:00 AM'));
+          if (AndroidAccessibilityBridge) {
+            await AndroidAccessibilityBridge.setAlarm(String(value || '07:00 AM'));
           }
           return true;
 
         case 'open_app':
-          if (SannaAccessibilityBridge) {
-            await SannaAccessibilityBridge.launchApp(String(value));
-          }
-          return true;
-
-        case 'toggle_wifi':
-          if (SannaAccessibilityBridge) {
-            await SannaAccessibilityBridge.toggleWifi(Boolean(value));
+          if (AndroidAccessibilityBridge) {
+            await AndroidAccessibilityBridge.launchApp(String(value));
           }
           return true;
 
@@ -1458,12 +1268,12 @@ export const systemControlTool = {
 };`
   },
   {
-    path: 'android/app/src/main/java/com/sannabotapp/SannaAccessibilityService.kt',
-    name: 'SannaAccessibilityService.kt',
+    path: 'android/app/src/main/java/com/androidvoiceagent/AndroidAccessibilityService.kt',
+    name: 'AndroidAccessibilityService.kt',
     category: 'native',
     language: 'kotlin',
     description: 'Production Android AccessibilityService inspecting UI trees, extracting screen text, and performing programmatic clicks without root.',
-    content: `package com.sannabotapp
+    content: `package com.androidvoiceagent
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
@@ -1474,23 +1284,22 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.os.Bundle
 
-class SannaAccessibilityService : AccessibilityService() {
+class AndroidAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        // Track active window events and dynamic UI changes
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d(TAG, "Window changed: \${event.packageName} | Class: \${event.className}")
         }
     }
 
     override fun onInterrupt() {
-        Log.w(TAG, "Sanna Accessibility Service Interrupted")
+        Log.w(TAG, "Accessibility Service Interrupted")
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
-        Log.i(TAG, "Sanna Accessibility Service Connected & Ready")
+        Log.i(TAG, "Accessibility Service Connected & Ready")
     }
 
     override fun onDestroy() {
@@ -1498,9 +1307,6 @@ class SannaAccessibilityService : AccessibilityService() {
         instance = null
     }
 
-    /**
-     * Finds a node by visible text (e.g. Arabic button names like 'إرسال', 'موافق') and clicks it.
-     */
     fun findAndClick(text: String): Boolean {
         val rootNode = rootInActiveWindow ?: return false
         val nodes = rootNode.findAccessibilityNodeInfosByText(text)
@@ -1521,9 +1327,6 @@ class SannaAccessibilityService : AccessibilityService() {
         return false
     }
 
-    /**
-     * Finds a node by its Android View Resource ID (e.g. "com.whatsapp:id/send") and clicks it.
-     */
     fun findAndClickById(viewId: String): Boolean {
         val rootNode = rootInActiveWindow ?: return false
         val nodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
@@ -1540,9 +1343,6 @@ class SannaAccessibilityService : AccessibilityService() {
         return false
     }
 
-    /**
-     * Recursively collects all readable text visible on the active screen.
-     */
     fun extractScreenText(): List<String> {
         val rootNode = rootInActiveWindow ?: return emptyList()
         val textList = mutableListOf<String>()
@@ -1562,9 +1362,6 @@ class SannaAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * Types text into a targeted input field or currently focused EditText.
-     */
     fun inputText(textToType: String): Boolean {
         val rootNode = rootInActiveWindow ?: return false
         val focusedNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
@@ -1576,9 +1373,6 @@ class SannaAccessibilityService : AccessibilityService() {
         return false
     }
 
-    /**
-     * Performs standard Android global accessibility actions (Back, Home, Notifications).
-     */
     fun triggerGlobalAction(actionType: String): Boolean {
         val action = when (actionType.lowercase()) {
             "back" -> GLOBAL_ACTION_BACK
@@ -1592,8 +1386,8 @@ class SannaAccessibilityService : AccessibilityService() {
     }
 
     companion object {
-        private const val TAG = "SannaAccessibility"
-        var instance: SannaAccessibilityService? = null
+        private const val TAG = "VoiceAccessibility"
+        var instance: AndroidAccessibilityService? = null
 
         fun isRunning(): Boolean {
             return instance != null
@@ -1602,12 +1396,12 @@ class SannaAccessibilityService : AccessibilityService() {
 }`
   },
   {
-    path: 'android/app/src/main/java/com/sannabotapp/SannaAccessibilityBridgeModule.kt',
-    name: 'SannaAccessibilityBridgeModule.kt',
+    path: 'android/app/src/main/java/com/androidvoiceagent/AndroidAccessibilityBridgeModule.kt',
+    name: 'AndroidAccessibilityBridgeModule.kt',
     category: 'native',
     language: 'kotlin',
     description: 'Kotlin React Native Bridge module exposing findAndClick, getScreenText, and launchApp to TypeScript.',
-    content: `package com.sannabotapp
+    content: `package com.androidvoiceagent
 
 import android.content.Context
 import android.content.Intent
@@ -1615,32 +1409,26 @@ import android.media.AudioManager
 import android.provider.AlarmClock
 import com.facebook.react.bridge.*
 
-class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationContext) :
+class AndroidAccessibilityBridgeModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     override fun getName(): String {
-        return "SannaAccessibilityBridge"
+        return "AndroidAccessibilityBridge"
     }
 
-    /**
-     * Check if the Sanna Accessibility Service is actively enabled in Android Settings.
-     */
     @ReactMethod
     fun isServiceEnabled(promise: Promise) {
-        promise.resolve(SannaAccessibilityService.isRunning())
+        promise.resolve(AndroidAccessibilityService.isRunning())
     }
 
-    /**
-     * Finds UI element by exact or partial Arabic/English text and clicks it.
-     */
     @ReactMethod
     fun findAndClick(text: String, promise: Promise) {
-        val service = SannaAccessibilityService.instance
+        val service = AndroidAccessibilityService.instance
         if (service != null) {
             val success = service.findAndClick(text)
             promise.resolve(success)
         } else {
-            promise.reject("SERVICE_NOT_CONNECTED", "SannaAccessibilityService is not enabled in Android Settings.")
+            promise.reject("SERVICE_NOT_CONNECTED", "AndroidAccessibilityService is not enabled in Settings.")
         }
     }
 
@@ -1649,17 +1437,14 @@ class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationC
         findAndClick(text, promise)
     }
 
-    /**
-     * Finds UI element by Android View ID (e.g. "com.whatsapp:id/send") and clicks it.
-     */
     @ReactMethod
     fun findAndClickById(viewId: String, promise: Promise) {
-        val service = SannaAccessibilityService.instance
+        val service = AndroidAccessibilityService.instance
         if (service != null) {
             val success = service.findAndClickById(viewId)
             promise.resolve(success)
         } else {
-            promise.reject("SERVICE_NOT_CONNECTED", "SannaAccessibilityService is not enabled in Android Settings.")
+            promise.reject("SERVICE_NOT_CONNECTED", "AndroidAccessibilityService is not enabled in Settings.")
         }
     }
 
@@ -1668,25 +1453,19 @@ class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationC
         findAndClickById(viewId, promise)
     }
 
-    /**
-     * Extracts all visible text from the active foreground application window.
-     */
     @ReactMethod
     fun getScreenText(promise: Promise) {
-        val service = SannaAccessibilityService.instance
+        val service = AndroidAccessibilityService.instance
         if (service != null) {
             val texts = service.extractScreenText()
             val array = Arguments.createArray()
             texts.forEach { array.pushString(it) }
             promise.resolve(array)
         } else {
-            promise.reject("SERVICE_NOT_CONNECTED", "SannaAccessibilityService is not enabled.")
+            promise.reject("SERVICE_NOT_CONNECTED", "AndroidAccessibilityService is not enabled.")
         }
     }
 
-    /**
-     * Launches any installed application by its package name (e.g., "com.whatsapp", "com.android.settings").
-     */
     @ReactMethod
     fun launchApp(packageName: String, promise: Promise) {
         try {
@@ -1703,23 +1482,17 @@ class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationC
         }
     }
 
-    /**
-     * Injects text into the focused input field via AccessibilityNodeInfo.ACTION_SET_TEXT.
-     */
     @ReactMethod
     fun inputText(text: String, promise: Promise) {
-        val service = SannaAccessibilityService.instance
+        val service = AndroidAccessibilityService.instance
         if (service != null) {
             val success = service.inputText(text)
             promise.resolve(success)
         } else {
-            promise.reject("SERVICE_NOT_CONNECTED", "SannaAccessibilityService is not enabled.")
+            promise.reject("SERVICE_NOT_CONNECTED", "AndroidAccessibilityService is not enabled.")
         }
     }
 
-    /**
-     * Changes Android system media volume level (0 - 100%).
-     */
     @ReactMethod
     fun setMediaVolume(volumePercent: Int, promise: Promise) {
         try {
@@ -1734,9 +1507,6 @@ class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationC
         }
     }
 
-    /**
-     * Sets an Android system alarm with custom Arabic tag.
-     */
     @ReactMethod
     fun setAlarm(timeString: String, promise: Promise) {
         try {
@@ -1745,7 +1515,7 @@ class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationC
             val minute = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
 
             val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
-                putExtra(AlarmClock.EXTRA_MESSAGE, "منبه بواسطة المساعد الصوتي سنا")
+                putExtra(AlarmClock.EXTRA_MESSAGE, "منبه بواسطة المساعد الصوتي")
                 putExtra(AlarmClock.EXTRA_HOUR, hour)
                 putExtra(AlarmClock.EXTRA_MINUTES, minute)
                 putExtra(AlarmClock.EXTRA_SKIP_UI, false)
@@ -1758,28 +1528,25 @@ class SannaAccessibilityBridgeModule(private val reactContext: ReactApplicationC
         }
     }
 
-    /**
-     * Triggers global navigation (back, home, recents, notifications).
-     */
     @ReactMethod
     fun performGlobalAction(actionName: String, promise: Promise) {
-        val service = SannaAccessibilityService.instance
+        val service = AndroidAccessibilityService.instance
         if (service != null) {
             val success = service.triggerGlobalAction(actionName)
             promise.resolve(success)
         } else {
-            promise.reject("SERVICE_NOT_CONNECTED", "SannaAccessibilityService is not enabled.")
+            promise.reject("SERVICE_NOT_CONNECTED", "AndroidAccessibilityService is not enabled.")
         }
     }
 }`
   },
   {
-    path: 'android/app/src/main/java/com/sannabotapp/SannaAccessibilityBridgePackage.kt',
-    name: 'SannaAccessibilityBridgePackage.kt',
+    path: 'android/app/src/main/java/com/androidvoiceagent/AndroidAccessibilityBridgePackage.kt',
+    name: 'AndroidAccessibilityBridgePackage.kt',
     category: 'native',
     language: 'kotlin',
-    description: 'React Native Package registration file binding SannaAccessibilityBridgeModule to the React Native runtime.',
-    content: `package com.sannabotapp
+    description: 'React Native Package registration file binding AndroidAccessibilityBridgeModule to the React Native runtime.',
+    content: `package com.androidvoiceagent
 
 import android.view.View
 import com.facebook.react.ReactPackage
@@ -1788,14 +1555,11 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ReactShadowNode
 import com.facebook.react.uimanager.ViewManager
 
-/**
- * Registers SannaAccessibilityBridgeModule into the React Native modules list.
- */
-class SannaAccessibilityBridgePackage : ReactPackage {
+class AndroidAccessibilityBridgePackage : ReactPackage {
 
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         val modules = ArrayList<NativeModule>()
-        modules.add(SannaAccessibilityBridgeModule(reactContext))
+        modules.add(AndroidAccessibilityBridgeModule(reactContext))
         return modules
     }
 
@@ -1807,12 +1571,12 @@ class SannaAccessibilityBridgePackage : ReactPackage {
 }`
   },
   {
-    path: 'android/app/src/main/java/com/sannabotapp/MainApplication.kt',
+    path: 'android/app/src/main/java/com/androidvoiceagent/MainApplication.kt',
     name: 'MainApplication.kt',
     category: 'native',
     language: 'kotlin',
-    description: 'Android Application class configuring React Native Host and registering SannaAccessibilityBridgePackage.',
-    content: `package com.sannabotapp
+    description: 'Android Application class configuring React Native Host and registering AndroidAccessibilityBridgePackage.',
+    content: `package com.androidvoiceagent
 
 import android.app.Application
 import com.facebook.react.PackageList
@@ -1830,8 +1594,7 @@ class MainApplication : Application(), ReactApplication {
         object : DefaultReactNativeHost(this) {
             override fun getPackages(): List<ReactPackage> =
                 PackageList(this).packages.apply {
-                    // Register Sanna Accessibility Bridge Package for native device automation
-                    add(SannaAccessibilityBridgePackage())
+                    add(AndroidAccessibilityBridgePackage())
                 }
 
             override fun getJSMainModuleName(): String = "index"
@@ -1855,12 +1618,12 @@ class MainApplication : Application(), ReactApplication {
 }`
   },
   {
-    path: 'android/app/src/main/java/com/sannabotapp/MainActivity.kt',
+    path: 'android/app/src/main/java/com/androidvoiceagent/MainActivity.kt',
     name: 'MainActivity.kt',
     category: 'native',
     language: 'kotlin',
     description: 'Android React Activity entry point configuring fullscreen, RTL Arabic layout, and component name.',
-    content: `package com.sannabotapp
+    content: `package com.androidvoiceagent
 
 import android.os.Bundle
 import android.view.WindowManager
@@ -1871,23 +1634,13 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
 
-    /**
-     * Returns the name of the main component registered from JavaScript.
-     * This is used to schedule rendering of the component.
-     */
-    override fun getMainComponentName(): String = "sannabotapp"
+    override fun getMainComponentName(): String = "androidvoiceagent"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(null) // Prevent crash on activity recreation
-        
-        // Keep screen on during active voice interaction sessions
+        super.onCreate(null)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    /**
-     * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
-     * which allows you to enable New Architecture with a single boolean flag [fabricEnabled]
-     */
     override fun createReactActivityDelegate(): ReactActivityDelegate =
         DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 }`
@@ -1901,7 +1654,7 @@ class MainActivity : ReactActivity() {
     content: `<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.sannabotapp">
+    package="com.androidvoiceagent">
 
     <!-- Audio Recording & Speech Recognition (STT) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -1928,7 +1681,7 @@ class MainActivity : ReactActivity() {
 
     <application
         android:name=".MainApplication"
-        android:label="سنا - Sanna AI"
+        android:label="المساعد الصوتي الذكي - AI Voice Assistant"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="false"
@@ -1940,7 +1693,7 @@ class MainActivity : ReactActivity() {
         <!-- Main Application Activity -->
         <activity
             android:name=".MainActivity"
-            android:label="سنا - Sanna AI"
+            android:label="المساعد الصوتي الذكي"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize"
@@ -1951,11 +1704,11 @@ class MainActivity : ReactActivity() {
             </intent-filter>
         </activity>
 
-        <!-- Sanna Accessibility Automation Service (Screen Reading & UI Automation) -->
+        <!-- Accessibility Automation Service (Screen Reading & UI Automation) -->
         <service
-            android:name=".SannaAccessibilityService"
+            android:name=".AndroidAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:label="Sanna AI Accessibility Service (خدمة سنا للوصول والتحكم)"
+            android:label="Voice Assistant Accessibility Service (خدمة الوصول والتحكم)"
             android:description="@string/accessibility_service_description"
             android:exported="true">
             <intent-filter>
@@ -1965,13 +1718,6 @@ class MainActivity : ReactActivity() {
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
-
-        <!-- Sanna Foreground Voice Assistant Service -->
-        <service
-            android:name=".SannaVoiceForegroundService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="microphone|specialUse" />
 
     </application>
 </manifest>`
@@ -1994,7 +1740,174 @@ class MainActivity : ReactActivity() {
     android:canRequestTouchExplorationMode="true"
     android:canControlMagnification="false"
     android:accessibilityFlags="flagDefault|flagReportViewIds|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews|flagRequestTouchExplorationMode"
-    android:settingsActivity="com.sannabotapp.MainActivity" />`
+    android:settingsActivity="com.androidvoiceagent.MainActivity" />`
+  },
+  {
+    path: 'android/app/src/main/res/values/strings.xml',
+    name: 'strings.xml',
+    category: 'native',
+    language: 'xml',
+    description: 'Android localized strings with Accessibility Service description.',
+    content: `<resources>
+    <string name="app_name">المساعد الصوتي الذكي</string>
+    <string name="accessibility_service_description">خدمة المساعد الصوتي الذكي لقراءة الشاشة وتنفيذ النقرات والتحكم بالتطبيقات نيابة عنك عبر الأوامر الصوتية.</string>
+</resources>`
+  },
+  {
+    path: '.github/workflows/android-build-apk.yml',
+    name: 'android-build-apk.yml',
+    category: 'root',
+    language: 'yaml',
+    description: 'Automated GitHub Actions CI/CD workflow to compile, build, and publish the Native Android APK directly on GitHub Releases/Artifacts with zero local errors.',
+    content: `name: Build Native Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Production Native APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js Environment (LTS 20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM Dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+
+      - name: Set up Java Development Kit (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Android SDK & Build Tools
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x android/gradlew
+
+      - name: Generate React Native Android JS Bundle
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx react-native bundle \\
+            --platform android \\
+            --dev false \\
+            --entry-file index.js \\
+            --bundle-output android/app/src/main/assets/index.android.bundle \\
+            --assets-dest android/app/src/main/res/
+
+      - name: Build Native Debug APK with Gradle
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload Native APK as GitHub Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-Voice-Agent-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+`
+  },
+  {
+    path: 'index.js',
+    name: 'index.js',
+    category: 'root',
+    language: 'javascript',
+    description: 'React Native entry registration binding App component to AppRegistry.',
+    content: `import { AppRegistry } from 'react-native';
+import App from './App';
+import { name as appName } from './app.json';
+
+AppRegistry.registerComponent(appName, () => App);
+`
+  },
+  {
+    path: 'app.json',
+    name: 'app.json',
+    category: 'root',
+    language: 'json',
+    description: 'React Native app configuration with app name and display title.',
+    content: `{
+  "name": "androidvoiceagent",
+  "displayName": "المساعد الصوتي الذكي - AI Voice Assistant"
+}
+`
+  },
+  {
+    path: 'android/settings.gradle',
+    name: 'settings.gradle',
+    category: 'native',
+    language: 'groovy',
+    description: 'Android Gradle settings file including app module and react native cli extensions.',
+    content: `rootProject.name = 'androidvoiceagent'
+apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applySettingsScript(project)
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')
+`
+  },
+  {
+    path: 'android/build.gradle',
+    name: 'build.gradle (Root)',
+    category: 'native',
+    language: 'groovy',
+    description: 'Root Android build.gradle specifying Kotlin, Android Gradle Plugin, and Maven repositories.',
+    content: `buildscript {
+    ext {
+        buildToolsVersion = "34.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 34
+        targetSdkVersion = 34
+        ndkVersion = "25.1.8937393"
+        kotlinVersion = "1.9.22"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.2.1")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://www.jitpack.io' }
+    }
+}
+`
+  },
+  {
+    path: 'android/gradle.properties',
+    name: 'gradle.properties',
+    category: 'native',
+    language: 'properties',
+    description: 'Gradle performance and memory optimization flags for Android APK builds.',
+    content: `org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m
+android.useAndroidX=true
+android.enableJetifier=true
+REACT_NATIVE_ARCHITECTURES=armeabi-v7a,arm64-v8a,x86,x86_64
+newArchEnabled=false
+hermesEnabled=true
+`
   },
   {
     path: 'android/app/build.gradle',
@@ -2020,10 +1933,10 @@ react {
 android {
     ndkVersion rootProject.ext.ndkVersion
     compileSdkVersion rootProject.ext.compileSdkVersion
-    namespace "com.sannabotapp"
+    namespace "com.androidvoiceagent"
 
     defaultConfig {
-        applicationId "com.sannabotapp"
+        applicationId "com.androidvoiceagent"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -2067,10 +1980,10 @@ apply from: file("../../node_modules/@react-native-community/cli-platform-androi
     name: 'SETUP_GUIDE.md',
     category: 'root',
     language: 'markdown',
-    description: 'Complete step-by-step setup and Gradle APK compilation guide for Sanna Android Assistant.',
-    content: `# 🚀 دليل إعداد وتجميع تطبيق سنا (Sanna AI Android Assistant)
+    description: 'Complete step-by-step setup and Gradle APK compilation guide for Android Voice Assistant.',
+    content: `# 🚀 دليل إعداد وتجميع تطبيق المساعد الصوتي الذكي (Android Voice Assistant APK)
 
-دليل شامل خطوة بخطوة لتثبيت الحزم وتجميع ملف الـ APK عبر Gradle وتشغيل المساعد الذكي على أجهزة الأندرويد.
+دليل شامل خطوة بخطوة لتثبيت الحزم وتجميع ملف الـ APK الحقيقي عبر Gradle وتشغيل المساعد كخدمة نظام (Accessibility Service) على أجهزة الأندرويد.
 
 ---
 
@@ -2101,7 +2014,7 @@ apply from: file("../../node_modules/@react-native-community/cli-platform-androi
 # عبر npm
 npm install
 
-# أو عبر Yarn (موصى به لـ React Native)
+# أو عبر Yarn
 yarn install
 \`\`\`
 
@@ -2109,7 +2022,7 @@ yarn install
 
 ## ⚙️ الخطوة 2: ضبط الإعدادات والمفاتيح (Configuration & Multi-Key Rotation)
 
-انسخ ملف الإعدادات وقم بإضافة مصفوفة مفاتيح Gemini API لتدوير المفاتيح تلقائياً وتفادي حدود الاستخدام (Rate Limits 429/403):
+انسخ ملف الإعدادات وقم بإضافة مصفوفة مفاتيح Gemini API لتدوير المفاتيح تلقائياً:
 
 \`\`\`bash
 cp local.config.example.ts local.config.ts
@@ -2125,15 +2038,9 @@ export const Config = {
     'AQ.Ab8RN6IPCY2zz710mgUc6laGWcXEfYr3-_HNJg2nYSFqkliZxA'
   ],
   STT_LOCALE: 'ar-SA',
-  WAKE_WORD: 'سنا',
+  WAKE_WORDS: ['تلفوني', 'مساعدي', 'يا زول', 'افتح يا سمسم'],
 };
 \`\`\`
-
-> 💡 **ميزة التدوير التلقائي لمفاتيح Gemini (Failover & Key Rotation):**
-> يقوم محرك \`hybrid-provider.ts\` بفحص استجابات Gemini؛ وفي حال وصول أي مفتاح لحدود الاستخدام (HTTP 429 / 403 / Resource Exhausted)، يتم الانتقال فوراً للمفتاح التالي في المصفوفة دون قطع جلسة التحدث مع المستخدم.
-
-> 💡 **ملاحظة حول ميزة كلمة التنبيه (Wake Word):**
-> يعمل كاشف كلمة "سنا" و "يا سنا" تلقائياً دون الحاجة لأي مفاتيح خارجية أو ملفات \`.ppn\` بفضل محرك الـ Mic Trigger المدمج.
 
 ---
 
@@ -2145,7 +2052,7 @@ export const Config = {
 # الدخول إلى مجلد الأندرويد
 cd android
 
-# تنظيف التجميعات السابقة (اختياري)
+# تنظيف التجميعات السابقة
 ./gradlew clean
 
 # تجميع الـ APK بنجاح
@@ -2166,17 +2073,9 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## 📲 الخطوة 4: التثبيت والتشغيل على الهاتف أو المحاكي
+## 📲 الخطوة 4: التثبيت والتشغيل على الهاتف
 
-### 1. عبر React Native CLI مباشرة:
-\`\`\`bash
-# من المجلد الرئيسي للمشروع
-npx react-native start --reset-cache
-# في نافذة طرفية أخرى:
-npx react-native run-android
-\`\`\`
-
-### 2. أو تثبيت ملف الـ APK يدوياً عبر ADB:
+### تثبيت ملف الـ APK يدوياً عبر ADB:
 \`\`\`bash
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 \`\`\`
@@ -2185,26 +2084,12 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 ## 🔒 الخطوة 5: تفعيل صلاحيات خدمة الوصول (Accessibility Service)
 
-لكي يتمكن مساعد "سنا" من قراءة الشاشة وتنفيذ النقرات في واتساب والتطبيقات الأخرى:
+لكي يتمكن المساعد من قراءة الشاشة وتنفيذ النقرات في واتساب والتطبيقات الأخرى كوكيل حقيقي:
 
 1. افتح **الإعدادات (Settings)** على هاتف الأندرويد.
 2. انتقل إلى **إمكانية الوصول (Accessibility)**.
-3. ابحث عن **Sanna AI Accessibility Service (خدمة سنا)**.
+3. ابحث عن **Voice Assistant Accessibility Service (خدمة الوصول والتحكم)**.
 4. اضغط **تفعيل (Turn ON)** ووافق على إذن التحكم بالشاشة.
-5. افتح تطبيق **سنا** وامنح إذن الميكروفون والإشعارات.
-
----
-
-## 🩺 حل المشاكل الشائعة (Troubleshooting)
-
-- **خطأ Gradle Daemon أو SDK غير موجود:**
-  تأكد من إنشاء ملف \`android/local.properties\` يحتوي على:
-  \`\`\`properties
-  sdk.dir=/Users/YOUR_USER/Library/Android/sdk # على macOS
-  # أو
-  sdk.dir=C:\\\\Users\\\\YOUR_USER\\\\AppData\\\\Local\\\\Android\\\\Sdk # على Windows
-  \`\`\`
-- **خطأ الصوت أو Voice Recognizer Not Found:**
-  تأكد من تثبيت تطبيق "Google Speech Recognition & Synthesis" على جهاز الأندرويد وتعيين اللغة العربية كلغة أساسية.`
+5. افتح التطبيق وامنح إذن الميكروفون والإشعارات.`
   }
 ];
