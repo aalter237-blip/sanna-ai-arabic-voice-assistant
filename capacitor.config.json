@@ -1,6 +1,6 @@
 {
-  "appId": "com.androidvoiceagent",
-  "appName": "المساعد الصوتي الذكي",
+  "appId": "com.sanna.ai",
+  "appName": "Sanna AI",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",
