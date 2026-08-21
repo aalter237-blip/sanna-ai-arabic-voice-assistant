@@ -1,5 +1,4 @@
 name: Build Android APK
-
 on:
   workflow_dispatch:
   push:
@@ -26,8 +25,9 @@ jobs:
     - name: Build web app
       run: npm run build
 
-    - name: Add Android platform
+    - name: Initialize Capacitor
       run: |
+        npx cap init "Sanna AI" "com.sanna.ai" --web-dir=dist
         npx cap add android
         npx cap sync
 
