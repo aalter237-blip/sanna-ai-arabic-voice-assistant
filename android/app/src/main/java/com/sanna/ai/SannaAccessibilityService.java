@@ -25,7 +25,7 @@ public class SannaAccessibilityService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
         instance = this;
-        Log.d(TAG, "Sanna Agent Connected");
+        Log.d(TAG, "Sanna Agent Connected and Ready");
     }
 
     @Override
@@ -40,7 +40,7 @@ public class SannaAccessibilityService extends AccessibilityService {
         GestureDescription.Builder builder = new GestureDescription.Builder();
         builder.addStroke(new GestureDescription.StrokeDescription(path, 0, 50));
         dispatchGesture(builder.build(), null, null);
-        Log.d(TAG, "Tapped at: " + x + ", " + y);
+        Log.d(TAG, "Tap at " + x + "," + y);
     }
 
     public void swipe(float x1, float y1, float x2, float y2, long duration) {
@@ -50,7 +50,7 @@ public class SannaAccessibilityService extends AccessibilityService {
         GestureDescription.Builder builder = new GestureDescription.Builder();
         builder.addStroke(new GestureDescription.StrokeDescription(path, 0, duration));
         dispatchGesture(builder.build(), null, null);
-        Log.d(TAG, "Swiped");
+        Log.d(TAG, "Swipe performed");
     }
 
     public void longPress(float x, float y) {
@@ -59,7 +59,7 @@ public class SannaAccessibilityService extends AccessibilityService {
         GestureDescription.Builder builder = new GestureDescription.Builder();
         builder.addStroke(new GestureDescription.StrokeDescription(path, 0, 1000));
         dispatchGesture(builder.build(), null, null);
-        Log.d(TAG, "Long pressed");
+        Log.d(TAG, "Long press");
     }
 
     public boolean clickByText(String text) {
@@ -71,7 +71,10 @@ public class SannaAccessibilityService extends AccessibilityService {
     private boolean findAndClick(AccessibilityNodeInfo node, String text) {
         if (node == null) return false;
         CharSequence nodeText = node.getText();
-        if (nodeText != null && nodeText.toString().contains(text) && node.isClickable()) {
+        CharSequence desc = node.getContentDescription();
+        boolean matches = (nodeText != null && nodeText.toString().toLowerCase().contains(text.toLowerCase())) ||
+                          (desc != null && desc.toString().toLowerCase().contains(text.toLowerCase()));
+        if (matches && node.isClickable()) {
             node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             return true;
         }

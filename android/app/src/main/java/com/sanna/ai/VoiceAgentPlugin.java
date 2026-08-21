@@ -1,5 +1,6 @@
 package com.sanna.ai;
 
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -17,7 +18,7 @@ public class VoiceAgentPlugin extends Plugin {
             return;
         }
         if (SannaAccessibilityService.instance == null) {
-            call.reject("Accessibility Service not enabled");
+            call.reject("Accessibility Service is not enabled");
             return;
         }
         SannaAccessibilityService.instance.tap(x, y);
@@ -33,7 +34,7 @@ public class VoiceAgentPlugin extends Plugin {
         Long duration = call.getLong("duration", 300L);
 
         if (SannaAccessibilityService.instance == null) {
-            call.reject("Accessibility Service not enabled");
+            call.reject("Accessibility Service is not enabled");
             return;
         }
         SannaAccessibilityService.instance.swipe(x1, y1, x2, y2, duration);
@@ -43,21 +44,25 @@ public class VoiceAgentPlugin extends Plugin {
     @PluginMethod
     public void clickByText(PluginCall call) {
         String text = call.getString("text");
-        if (text == null) {
+        if (text == null || text.isEmpty()) {
             call.reject("text is required");
             return;
         }
         if (SannaAccessibilityService.instance == null) {
-            call.reject("Accessibility Service not enabled");
+            call.reject("Accessibility Service is not enabled");
             return;
         }
         boolean success = SannaAccessibilityService.instance.clickByText(text);
-        call.resolve();
+        JSObject result = new JSObject();
+        result.put("success", success);
+        call.resolve(result);
     }
 
     @PluginMethod
     public void isServiceEnabled(PluginCall call) {
         boolean enabled = SannaAccessibilityService.instance != null;
-        call.resolve(new com.getcapacitor.JSObject().put("enabled", enabled));
+        JSObject result = new JSObject();
+        result.put("enabled", enabled);
+        call.resolve(result);
     }
 }
