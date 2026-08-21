@@ -1,0 +1,6 @@
+{
+  "name": "Sanna AI - Arabic Voice Assistant & Android Automation",
+  "description": "Production-grade Arabic AI Voice Assistant & Android Accessibility Automation platform supporting MSA and dialects, hybrid online/offline intelligence, and real-time device automation.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
