@@ -1,7 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">المساعد الصوتي الذكي</string>
-    <string name="title_activity_main">المساعد الصوتي الذكي</string>
-    <string name="package_name">com.androidvoiceagent</string>
-    <string name="custom_url_scheme">com.androidvoiceagent</string>
-    <string name="accessibility_service_description">تتيح هذه الخدمة للمساعد الصوتي الذكي التحكم بالهاتف، قراءة عناصر الشاشة، وتنفيذ النقرات والكتابة بالأوامر الصوتية باللغة العربية.</string>
+    <string name="app_name">Sanna AI</string>
+    <string name="title_activity_main">Sanna AI</string>
+    <string name="package_name">com.sanna.ai</string>
+    <string name="custom_url_scheme">com.sanna.ai</string>
 </resources>
