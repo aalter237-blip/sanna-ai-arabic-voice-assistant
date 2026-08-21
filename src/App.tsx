@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
+import { AgentSetupBar } from './components/AgentSetupBar';
 import { VoiceAssistantOrb } from './components/VoiceAssistantOrb';
 import { QuickCommands } from './components/QuickCommands';
 import { SettingsModal } from './components/SettingsModal';
@@ -275,8 +276,14 @@ export default function App() {
           await NativeAgentBridge.getScreenText();
         } else if (step.action === "start_listen") {
           await NativeAgentBridge.startBackgroundListening(["سنا","تلفوني"]);
+        } else if (step.action === "send_message") {
+          await NativeAgentBridge.launchApp(step.target || "com.whatsapp");
+          if (step.recipient) await NativeAgentBridge.clickByText(String(step.recipient));
+          if (step.value) await NativeAgentBridge.inputText(String(step.value));
         } else if (step.action === "read_notifications") {
-          await NativeAgentBridge.getNotifications();
+          const items = await NativeAgentBridge.getNotifications();
+          const txt = (items||[]).slice(0,5).map((i:any)=>`${i.title||""}: ${i.text||""}`).join("، ");
+          if (txt) data.speech = "آخر الإشعارات: " + txt;
         } else if (step.action === "reply_notification" && step.value) {
           await NativeAgentBridge.replyLastNotification(String(step.value));
             }
@@ -367,7 +374,8 @@ export default function App() {
 
       {/* Top Header Bar with Settings Button */}
       <div className="relative z-10">
-        <Header
+        <AgentSetupBar />
+      <Header
           dialect={dialect}
           onDialectChange={setDialect}
           onOpenSettings={() => setIsSettingsOpen(true)}
