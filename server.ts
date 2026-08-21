@@ -63,6 +63,10 @@ function rotateServerGeminiKey(reason: string = 'Rate limit 429/403'): string {
   return DEFAULT_GEMINI_KEYS[currentServerKeyIndex];
 }
 
+const SYSTEM_PROMPT_EXTRA = `
+
+قواعد إلزامية: أجب دائماً بالعربية الفصيحة أو لهجة المستخدم. لا تترك الأمر بدون رد. إذا كان طلباً على الجهاز أرجع steps قابلة للتنفيذ. إذا تعذر التنفيذ اشرح السبب في speech. لا تقل لا أعرف إلا بعد محاولة خطوة واحدة على الأقل.
+`;
 const SYSTEM_PROMPT = `
 You are an advanced Arabic AI Voice Assistant & General Android UI Automation Agent.
 Your role is to understand user voice commands in Arabic across all dialects (Sudanese - سوداني, Modern Standard Arabic - الفصحى, Egyptian - مصري, Gulf/Saudi - خليجي/سعودي, Levantine - شامي, Maghrebi - مغاربي) and execute Android smartphone actions.
@@ -97,7 +101,7 @@ When an action is needed, return a structured JSON code block containing an arra
     {
       "step_number": 1,
       "tool": "system_control" | "accessibility_control" | "whatsapp_tool" | "screen_reader",
-      "action": "open_app" | "click_by_text" | "click_by_id" | "scroll_forward" | "read_screen_text" | "set_volume" | "set_timer" | "toggle_wifi" | "type_text" | "send_message",
+      "action": "open_app" | "click_by_text" | "click_by_id" | "scroll_forward" | "read_screen" | "read_screen_text" | "set_volume" | "set_alarm" | "set_timer" | "type_text" | "send_message" | "back" | "home" | "notifications" | "start_listen" | "read_notifications" | "reply_notification",
       "target": "package name, element text or view id",
       "value": "optional value or text to type",
       "recipient": "optional for whatsapp",
@@ -209,7 +213,7 @@ app.post("/api/agent/chat", async (req, res) => {
 [CURRENT CONTEXT]
 - Screen State: ${currentScreen}
 - User Preferred Dialect: ${dialect}
-- Conversation History: ${JSON.stringify(history.slice(-4))}
+- Conversation History: ${JSON.stringify(history.slice(-12))}
 
 [USER COMMAND]
 "${message}"
@@ -233,7 +237,7 @@ app.post("/api/agent/chat", async (req, res) => {
         model: "gemini-2.5-flash",
         contents: prompt,
         config: {
-          systemInstruction: SYSTEM_PROMPT,
+          systemInstruction: SYSTEM_PROMPT + SYSTEM_PROMPT_EXTRA,
           temperature: 0.3,
           responseMimeType: "application/json",
         },

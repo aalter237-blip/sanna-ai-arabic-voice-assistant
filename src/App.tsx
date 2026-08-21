@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
+import { AgentSetupBar } from './components/AgentSetupBar';
 import { VoiceAssistantOrb } from './components/VoiceAssistantOrb';
 import { QuickCommands } from './components/QuickCommands';
 import { SettingsModal } from './components/SettingsModal';
@@ -171,6 +172,19 @@ export default function App() {
     voiceAudio.startListening(locale);
   };
 
+  useEffect(() => {
+    NativeAgentBridge.requestAppPermissions();
+    NativeAgentBridge.startBackgroundListening(["سنا","تلفوني","سناء","مساعدي"]);
+    const onWake = () => { try { handleStartListening(); } catch (e) {} };
+    window.addEventListener("sanna-wake", onWake);
+    return () => window.removeEventListener("sanna-wake", onWake);
+  }, []);
+  useEffect(() => {
+    try { const s=localStorage.getItem("sanna-history"); if(s) setConversationHistory(JSON.parse(s)); } catch(e) {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("sanna-history", JSON.stringify(conversationHistory.slice(-30))); } catch(e) {}
+  }, [conversationHistory]);
   const handleStopListening = () => {
     voiceAudio.stopListening();
     setIsListening(false);
@@ -255,6 +269,26 @@ export default function App() {
               await NativeAgentBridge.setVolume(parseInt(String(step.value), 10) || 50);
             } else if (step.action === 'set_alarm' && step.value) {
               await NativeAgentBridge.setAlarm(String(step.value), step.description);
+        } else if (step.action === "back") {
+          await NativeAgentBridge.performGlobalAction("back");
+        } else if (step.action === "home") {
+          await NativeAgentBridge.performGlobalAction("home");
+        } else if (step.action === "notifications") {
+          await NativeAgentBridge.performGlobalAction("notifications");
+        } else if (step.action === "read_screen") {
+          await NativeAgentBridge.getScreenText();
+        } else if (step.action === "start_listen") {
+          await NativeAgentBridge.startBackgroundListening(["سنا","تلفوني"]);
+        } else if (step.action === "send_message") {
+          await NativeAgentBridge.launchApp(step.target || "com.whatsapp");
+          if (step.recipient) await NativeAgentBridge.clickByText(String(step.recipient));
+          if (step.value) await NativeAgentBridge.inputText(String(step.value));
+        } else if (step.action === "read_notifications") {
+          const items = await NativeAgentBridge.getNotifications();
+          const txt = (items||[]).slice(0,5).map((i:any)=>`${i.title||""}: ${i.text||""}`).join("، ");
+          if (txt) data.speech = "آخر الإشعارات: " + txt;
+        } else if (step.action === "reply_notification" && step.value) {
+          await NativeAgentBridge.replyLastNotification(String(step.value));
             }
           } catch (nativeErr) {
             console.warn('[Native Execution Warning]', nativeErr);
@@ -262,7 +296,82 @@ export default function App() {
         }
       }
 
-      // Speak Vocal Response via Arabic TTS Engine
+            let screenTexts: string[] = [];
+      try { screenTexts = await NativeAgentBridge.getScreenText(); } catch(e) {}
+      if (screenTexts && screenTexts.length) {
+        (window as any).__sannaScreen = screenTexts.slice(0,80).join(" | ");
+        try {
+          const res2 = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: userText + "\n\n[نص الشاشة الحالي]\n" + (window as any).__sannaScreen,
+              history: conversationHistory,
+              dialect: currentDialect,
+              activeKey: activeKey,
+              currentScreen: (window as any).__sannaScreen,
+            }),
+          });
+          if (res2.ok) {
+            const data2 = await res2.json();
+            if (data2.steps && data2.steps.length) {
+              for (const step of data2.steps) {
+                try {
+                  if (step.action === "open_app" && step.target) await NativeAgentBridge.launchApp(step.target);
+                  else if (step.action === "click_by_text" && step.target) await NativeAgentBridge.clickByText(step.target);
+                  else if (step.action === "type_text" && step.value) await NativeAgentBridge.inputText(String(step.value));
+                } catch(e) {}
+              }
+            }
+            if (data2.speech) data.speech = data2.speech;
+          }
+        } catch(e) {}
+      }
+
+      for (let round=0; round<2; round++) {
+        let more: string[] = [];
+        try { more = await NativeAgentBridge.getScreenText(); } catch(e) {}
+        if (!more || !more.length) break;
+        (window as any).__sannaScreen = more.slice(0,80).join(" | ");
+        try {
+          const resN = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: userText + "\n\n[نص الشاشة]\n" + (window as any).__sannaScreen,
+              history: conversationHistory,
+              dialect: currentDialect,
+              activeKey: activeKey,
+              currentScreen: (window as any).__sannaScreen,
+            }),
+          });
+          if (!resN.ok) break;
+          const dataN = await resN.json();
+          if (!dataN.steps || !dataN.steps.length) {
+            if (dataN.speech) data.speech = dataN.speech;
+            break;
+          }
+          for (const step of dataN.steps) {
+            try {
+              if (step.action === "open_app" && step.target) await NativeAgentBridge.launchApp(step.target);
+              else if (step.action === "click_by_text" && step.target) await NativeAgentBridge.clickByText(step.target);
+              else if (step.action === "type_text" && step.value) await NativeAgentBridge.inputText(String(step.value));
+              else if (step.action === "send_message") {
+                await NativeAgentBridge.launchApp(step.target || "com.whatsapp");
+                if (step.recipient) {
+                  await NativeAgentBridge.clickByText("بحث");
+                  await NativeAgentBridge.inputText(String(step.recipient));
+                  await NativeAgentBridge.clickByText(String(step.recipient));
+                }
+                if (step.value) await NativeAgentBridge.inputText(String(step.value));
+              }
+            } catch(e) {}
+          }
+          if (dataN.speech) data.speech = dataN.speech;
+        } catch(e) { break; }
+      }
+
+// Speak Vocal Response via Arabic TTS Engine
       setIsSpeaking(true);
       if (soundEffects) {
         voiceAudio.playSuccessChime();
@@ -311,7 +420,8 @@ export default function App() {
 
       {/* Top Header Bar with Settings Button */}
       <div className="relative z-10">
-        <Header
+        <AgentSetupBar />
+      <Header
           dialect={dialect}
           onDialectChange={setDialect}
           onOpenSettings={() => setIsSettingsOpen(true)}

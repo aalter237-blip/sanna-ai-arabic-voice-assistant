@@ -3,84 +3,25 @@ package com.sanna.ai;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
 import android.graphics.Path;
-import android.util.Log;
+import android.os.Bundle;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SannaAccessibilityService extends AccessibilityService {
-
-    private static final String TAG = "SannaAgent";
     public static SannaAccessibilityService instance;
-
-    @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
-    }
-
-    @Override
-    public void onInterrupt() {
-        Log.d(TAG, "Service interrupted");
-    }
-
-    @Override
-    protected void onServiceConnected() {
-        super.onServiceConnected();
-        instance = this;
-        Log.d(TAG, "Sanna Agent Connected and Ready");
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        instance = null;
-    }
-
-    public void tap(float x, float y) {
-        Path path = new Path();
-        path.moveTo(x, y);
-        GestureDescription.Builder builder = new GestureDescription.Builder();
-        builder.addStroke(new GestureDescription.StrokeDescription(path, 0, 50));
-        dispatchGesture(builder.build(), null, null);
-        Log.d(TAG, "Tap at " + x + "," + y);
-    }
-
-    public void swipe(float x1, float y1, float x2, float y2, long duration) {
-        Path path = new Path();
-        path.moveTo(x1, y1);
-        path.lineTo(x2, y2);
-        GestureDescription.Builder builder = new GestureDescription.Builder();
-        builder.addStroke(new GestureDescription.StrokeDescription(path, 0, duration));
-        dispatchGesture(builder.build(), null, null);
-        Log.d(TAG, "Swipe performed");
-    }
-
-    public void longPress(float x, float y) {
-        Path path = new Path();
-        path.moveTo(x, y);
-        GestureDescription.Builder builder = new GestureDescription.Builder();
-        builder.addStroke(new GestureDescription.StrokeDescription(path, 0, 1000));
-        dispatchGesture(builder.build(), null, null);
-        Log.d(TAG, "Long press");
-    }
-
-    public boolean clickByText(String text) {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null) return false;
-        return findAndClick(root, text);
-    }
-
-    private boolean findAndClick(AccessibilityNodeInfo node, String text) {
-        if (node == null) return false;
-        CharSequence nodeText = node.getText();
-        CharSequence desc = node.getContentDescription();
-        boolean matches = (nodeText != null && nodeText.toString().toLowerCase().contains(text.toLowerCase())) ||
-                          (desc != null && desc.toString().toLowerCase().contains(text.toLowerCase()));
-        if (matches && node.isClickable()) {
-            node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            return true;
-        }
-        for (int i = 0; i < node.getChildCount(); i++) {
-            if (findAndClick(node.getChild(i), text)) return true;
-        }
-        return false;
-    }
+    @Override public void onAccessibilityEvent(AccessibilityEvent e) {}
+    @Override public void onInterrupt() {}
+    @Override protected void onServiceConnected() { super.onServiceConnected(); instance = this; }
+    @Override public void onDestroy() { super.onDestroy(); instance = null; }
+    public void tap(float x, float y) { Path p=new Path(); p.moveTo(x,y); dispatchGesture(new GestureDescription.Builder().addStroke(new GestureDescription.StrokeDescription(p,0,50)).build(),null,null); }
+    public void swipe(float x1,float y1,float x2,float y2,long d){ Path p=new Path(); p.moveTo(x1,y1); p.lineTo(x2,y2); dispatchGesture(new GestureDescription.Builder().addStroke(new GestureDescription.StrokeDescription(p,0,d)).build(),null,null); }
+    public boolean clickByText(String text){ AccessibilityNodeInfo r=getRootInActiveWindow(); return r!=null && findAndClick(r,text); }
+    public boolean clickById(String id){ AccessibilityNodeInfo r=getRootInActiveWindow(); if(r==null)return false; List<AccessibilityNodeInfo> n=r.findAccessibilityNodeInfosByViewId(id); if(n==null)return false; for(AccessibilityNodeInfo x:n){ if(x!=null&&x.isClickable()){ x.performAction(AccessibilityNodeInfo.ACTION_CLICK); return true; } } return false; }
+    public List<String> getScreenText(){ List<String> o=new ArrayList<>(); collect(getRootInActiveWindow(),o); return o; }
+    public boolean inputText(String text){ AccessibilityNodeInfo r=getRootInActiveWindow(); if(r==null)return false; AccessibilityNodeInfo f=r.findFocus(AccessibilityNodeInfo.FOCUS_INPUT); if(f==null)f=r.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY); if(f==null)return false; Bundle b=new Bundle(); b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,text); return f.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,b); }
+    public boolean global(String a){ if("back".equals(a))return performGlobalAction(GLOBAL_ACTION_BACK); if("home".equals(a))return performGlobalAction(GLOBAL_ACTION_HOME); if("recents".equals(a))return performGlobalAction(GLOBAL_ACTION_RECENTS); if("notifications".equals(a))return performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS); if("quick_settings".equals(a))return performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS); return false; }
+    private void collect(AccessibilityNodeInfo n,List<String> o){ if(n==null)return; CharSequence t=n.getText(); CharSequence d=n.getContentDescription(); if(t!=null&&t.length()>0)o.add(t.toString()); else if(d!=null&&d.length()>0)o.add(d.toString()); for(int i=0;i<n.getChildCount();i++)collect(n.getChild(i),o); }
+    private boolean findAndClick(AccessibilityNodeInfo n,String text){ if(n==null)return false; CharSequence t=n.getText(); CharSequence d=n.getContentDescription(); boolean m=(t!=null&&t.toString().toLowerCase().contains(text.toLowerCase()))||(d!=null&&d.toString().toLowerCase().contains(text.toLowerCase())); if(m&&n.isClickable()){ n.performAction(AccessibilityNodeInfo.ACTION_CLICK); return true; } for(int i=0;i<n.getChildCount();i++){ if(findAndClick(n.getChild(i),text))return true; } return false; }
 }
