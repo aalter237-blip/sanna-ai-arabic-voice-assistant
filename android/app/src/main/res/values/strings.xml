@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">المساعد الصوتي الذكي</string>
+    <string name="title_activity_main">المساعد الصوتي الذكي</string>
+    <string name="package_name">com.androidvoiceagent</string>
+    <string name="custom_url_scheme">com.androidvoiceagent</string>
+    <string name="accessibility_service_description">تتيح هذه الخدمة للمساعد الصوتي الذكي التحكم بالهاتف، قراءة عناصر الشاشة، وتنفيذ النقرات والكتابة بالأوامر الصوتية باللغة العربية.</string>
+</resources>

@@ -4,6 +4,7 @@ import { VoiceAssistantOrb } from './components/VoiceAssistantOrb';
 import { QuickCommands } from './components/QuickCommands';
 import { SettingsModal } from './components/SettingsModal';
 import { voiceAudio } from './services/audio-service';
+import { NativeAgentBridge } from './services/native-agent-bridge';
 import { ArabicDialect, OperatingMode, AgentResponse } from './types';
 import { User, Phone, MessageSquare } from 'lucide-react';
 import defaultBg from './assets/images/app_background_1787290542004.jpg';
@@ -234,6 +235,29 @@ export default function App() {
 
       const vocalText = data.speech || 'تم تنفيذ طلبك بنجاح.';
       setAgentSpeech(vocalText);
+
+      // Execute Native Android Agent Steps if running in APK / Native mode
+      if (data.steps && Array.isArray(data.steps) && data.steps.length > 0) {
+        for (const step of data.steps) {
+          try {
+            if (step.action === 'open_app' && step.target) {
+              await NativeAgentBridge.launchApp(step.target);
+            } else if (step.action === 'click_by_text' && step.target) {
+              await NativeAgentBridge.clickByText(step.target);
+            } else if (step.action === 'click_by_id' && step.target) {
+              await NativeAgentBridge.clickById(step.target);
+            } else if (step.action === 'type_text' && step.value) {
+              await NativeAgentBridge.inputText(String(step.value));
+            } else if (step.action === 'set_volume' && step.value) {
+              await NativeAgentBridge.setVolume(parseInt(String(step.value), 10) || 50);
+            } else if (step.action === 'set_alarm' && step.value) {
+              await NativeAgentBridge.setAlarm(String(step.value), step.description);
+            }
+          } catch (nativeErr) {
+            console.warn('[Native Execution Warning]', nativeErr);
+          }
+        }
+      }
 
       // Speak Vocal Response via Arabic TTS Engine
       setIsSpeaking(true);

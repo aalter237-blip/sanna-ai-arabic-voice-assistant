@@ -1,0 +1,2 @@
+rootProject.name = 'androidvoiceagent'
+include ':app'

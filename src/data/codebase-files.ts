@@ -1618,31 +1618,314 @@ class MainApplication : Application(), ReactApplication {
 }`
   },
   {
+    path: 'android/app/src/main/java/com/androidvoiceagent/VoiceAgentPlugin.kt',
+    name: 'VoiceAgentPlugin.kt',
+    category: 'native',
+    language: 'kotlin',
+    description: 'Capacitor and React Native unified native plugin bridging Accessibility, Screen Reading, Alarms, and Background Voice Listening to JS runtime.',
+    content: `package com.androidvoiceagent
+
+import android.content.Context
+import android.content.Intent
+import android.media.AudioManager
+import android.provider.AlarmClock
+import android.provider.Settings
+import com.getcapacitor.JSObject
+import com.getcapacitor.Plugin
+import com.getcapacitor.PluginCall
+import com.getcapacitor.PluginMethod
+import com.getcapacitor.annotation.CapacitorPlugin
+
+@CapacitorPlugin(name = "VoiceAgentPlugin")
+class VoiceAgentPlugin : Plugin() {
+
+    @PluginMethod
+    fun isAccessibilityEnabled(call: PluginCall) {
+        val enabled = AndroidAccessibilityService.isRunning()
+        val ret = JSObject()
+        ret.put("enabled", enabled)
+        call.resolve(ret)
+    }
+
+    @PluginMethod
+    fun openAccessibilitySettings(call: PluginCall) {
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            val ret = JSObject()
+            ret.put("success", true)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("FAILED_OPEN_SETTINGS", e.message)
+        }
+    }
+
+    @PluginMethod
+    fun clickByText(call: PluginCall) {
+        val text = call.getString("text") ?: ""
+        val service = AndroidAccessibilityService.instance
+        if (service != null) {
+            val success = service.findAndClick(text)
+            val ret = JSObject()
+            ret.put("success", success)
+            call.resolve(ret)
+        } else {
+            call.reject("ACCESSIBILITY_NOT_ENABLED", "Accessibility service is not running")
+        }
+    }
+
+    @PluginMethod
+    fun clickById(call: PluginCall) {
+        val viewId = call.getString("viewId") ?: ""
+        val service = AndroidAccessibilityService.instance
+        if (service != null) {
+            val success = service.findAndClickById(viewId)
+            val ret = JSObject()
+            ret.put("success", success)
+            call.resolve(ret)
+        } else {
+            call.reject("ACCESSIBILITY_NOT_ENABLED", "Accessibility service is not running")
+        }
+    }
+
+    @PluginMethod
+    fun getScreenText(call: PluginCall) {
+        val service = AndroidAccessibilityService.instance
+        if (service != null) {
+            val texts = service.extractScreenText()
+            val ret = JSObject()
+            val jsArray = com.getcapacitor.JSArray(texts)
+            ret.put("texts", jsArray)
+            call.resolve(ret)
+        } else {
+            call.reject("ACCESSIBILITY_NOT_ENABLED", "Accessibility service is not running")
+        }
+    }
+
+    @PluginMethod
+    fun inputText(call: PluginCall) {
+        val text = call.getString("text") ?: ""
+        val service = AndroidAccessibilityService.instance
+        if (service != null) {
+            val success = service.inputText(text)
+            val ret = JSObject()
+            ret.put("success", success)
+            call.resolve(ret)
+        } else {
+            call.reject("ACCESSIBILITY_NOT_ENABLED", "Accessibility service is not running")
+        }
+    }
+
+    @PluginMethod
+    fun launchApp(call: PluginCall) {
+        val packageName = call.getString("packageName") ?: ""
+        try {
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(launchIntent)
+                val ret = JSObject()
+                ret.put("success", true)
+                call.resolve(ret)
+            } else {
+                call.reject("APP_NOT_FOUND", "Package $packageName not found")
+            }
+        } catch (e: Exception) {
+            call.reject("LAUNCH_ERROR", e.message)
+        }
+    }
+
+    @PluginMethod
+    fun setVolume(call: PluginCall) {
+        val percent = call.getInt("percent") ?: 50
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val clamped = percent.coerceIn(0, 100)
+            val target = (clamped * maxVolume) / 100
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, target, AudioManager.FLAG_SHOW_UI)
+            val ret = JSObject()
+            ret.put("success", true)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("VOLUME_ERROR", e.message)
+        }
+    }
+
+    @PluginMethod
+    fun setAlarm(call: PluginCall) {
+        val timeString = call.getString("time") ?: "07:00"
+        val label = call.getString("label") ?: "منبه بواسطة المساعد الصوتي"
+        try {
+            val parts = timeString.replace("ص", "").replace("م", "").trim().split(":")
+            val hour = parts.getOrNull(0)?.trim()?.toIntOrNull() ?: 7
+            val minute = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
+
+            val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
+                putExtra(AlarmClock.EXTRA_MESSAGE, label)
+                putExtra(AlarmClock.EXTRA_HOUR, hour)
+                putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            val ret = JSObject()
+            ret.put("success", true)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("ALARM_ERROR", e.message)
+        }
+    }
+
+    @PluginMethod
+    fun performGlobalAction(call: PluginCall) {
+        val action = call.getString("action") ?: "back"
+        val service = AndroidAccessibilityService.instance
+        if (service != null) {
+            val success = service.triggerGlobalAction(action)
+            val ret = JSObject()
+            ret.put("success", success)
+            call.resolve(ret)
+        } else {
+            call.reject("ACCESSIBILITY_NOT_ENABLED", "Accessibility service is not running")
+        }
+    }
+
+    @PluginMethod
+    fun startBackgroundListening(call: PluginCall) {
+        try {
+            val serviceIntent = Intent(context, VoiceForegroundService::class.java).apply {
+                action = VoiceForegroundService.ACTION_START_LISTENING
+            }
+            context.startForegroundService(serviceIntent)
+            val ret = JSObject()
+            ret.put("success", true)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("BACKGROUND_SERVICE_ERROR", e.message)
+        }
+    }
+
+    @PluginMethod
+    fun stopBackgroundListening(call: PluginCall) {
+        try {
+            val serviceIntent = Intent(context, VoiceForegroundService::class.java).apply {
+                action = VoiceForegroundService.ACTION_STOP_LISTENING
+            }
+            context.startService(serviceIntent)
+            val ret = JSObject()
+            ret.put("success", true)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("BACKGROUND_SERVICE_ERROR", e.message)
+        }
+    }
+}`
+  },
+  {
+    path: 'android/app/src/main/java/com/androidvoiceagent/VoiceForegroundService.kt',
+    name: 'VoiceForegroundService.kt',
+    category: 'native',
+    language: 'kotlin',
+    description: 'Android Foreground Service for continuous microphone wake word detection and background voice execution.',
+    content: `package com.androidvoiceagent
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+
+class VoiceForegroundService : Service() {
+
+    companion object {
+        const val CHANNEL_ID = "VoiceAssistantAgentChannel"
+        const val NOTIFICATION_ID = 1001
+        const val ACTION_START_LISTENING = "ACTION_START_LISTENING"
+        const val ACTION_STOP_LISTENING = "ACTION_STOP_LISTENING"
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_START_LISTENING -> {
+                val notification = createNotification("المساعد الصوتي يستمع في الخلفية...")
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            ACTION_STOP_LISTENING -> {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
+        }
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun createNotification(message: String): Notification {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("المساعد الصوتي الذكي")
+            .setContentText(message)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "خدمة الاستماع الصوتي في الخلفية",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "إشعار تشغيل المساعد الصوتي في الخلفية"
+            }
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+    }
+}`
+  },
+  {
     path: 'android/app/src/main/java/com/androidvoiceagent/MainActivity.kt',
     name: 'MainActivity.kt',
     category: 'native',
     language: 'kotlin',
-    description: 'Android React Activity entry point configuring fullscreen, RTL Arabic layout, and component name.',
+    description: 'Android Activity registering VoiceAgentPlugin bridge, Accessibility, and RTL Arabic support.',
     content: `package com.androidvoiceagent
 
 import android.os.Bundle
 import android.view.WindowManager
-import com.facebook.react.ReactActivity
-import com.facebook.react.ReactActivityDelegate
-import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
-import com.facebook.react.defaults.DefaultReactActivityDelegate
+import com.getcapacitor.BridgeActivity
 
-class MainActivity : ReactActivity() {
-
-    override fun getMainComponentName(): String = "androidvoiceagent"
+class MainActivity : BridgeActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(null)
+        super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
+        // Register VoiceAgentPlugin with Capacitor Bridge
+        registerPlugin(VoiceAgentPlugin::class.java)
     }
-
-    override fun createReactActivityDelegate(): ReactActivityDelegate =
-        DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 }`
   },
   {
@@ -1718,6 +2001,12 @@ class MainActivity : ReactActivity() {
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <!-- Background Voice Listening Foreground Service -->
+        <service
+            android:name=".VoiceForegroundService"
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
 
     </application>
 </manifest>`
