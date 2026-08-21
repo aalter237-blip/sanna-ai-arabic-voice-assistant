@@ -63,6 +63,10 @@ function rotateServerGeminiKey(reason: string = 'Rate limit 429/403'): string {
   return DEFAULT_GEMINI_KEYS[currentServerKeyIndex];
 }
 
+const SYSTEM_PROMPT_EXTRA = `
+
+قواعد إلزامية: أجب دائماً بالعربية الفصيحة أو لهجة المستخدم. لا تترك الأمر بدون رد. إذا كان طلباً على الجهاز أرجع steps قابلة للتنفيذ. إذا تعذر التنفيذ اشرح السبب في speech. لا تقل لا أعرف إلا بعد محاولة خطوة واحدة على الأقل.
+`;
 const SYSTEM_PROMPT = `
 You are an advanced Arabic AI Voice Assistant & General Android UI Automation Agent.
 Your role is to understand user voice commands in Arabic across all dialects (Sudanese - سوداني, Modern Standard Arabic - الفصحى, Egyptian - مصري, Gulf/Saudi - خليجي/سعودي, Levantine - شامي, Maghrebi - مغاربي) and execute Android smartphone actions.
@@ -233,7 +237,7 @@ app.post("/api/agent/chat", async (req, res) => {
         model: "gemini-2.5-flash",
         contents: prompt,
         config: {
-          systemInstruction: SYSTEM_PROMPT,
+          systemInstruction: SYSTEM_PROMPT + SYSTEM_PROMPT_EXTRA,
           temperature: 0.3,
           responseMimeType: "application/json",
         },
