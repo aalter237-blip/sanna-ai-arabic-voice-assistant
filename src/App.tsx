@@ -250,7 +250,7 @@ export default function App() {
         }),
       });
 
-      const data: AgentResponse = await res.json();
+      /* data already set by local agent */
 
       const vocalText = data.speech || 'تم تنفيذ طلبك بنجاح.';
       setAgentSpeech(vocalText);
