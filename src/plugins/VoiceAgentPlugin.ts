@@ -7,6 +7,5 @@ export interface VoiceAgentPlugin {
   isServiceEnabled(): Promise<{ enabled: boolean }>;
 }
 
-const VoiceAgent = registerPlugin<VoiceAgentPlugin>('VoiceAgent');
-
+export const VoiceAgent = registerPlugin<VoiceAgentPlugin>('VoiceAgent');
 export default VoiceAgent;
