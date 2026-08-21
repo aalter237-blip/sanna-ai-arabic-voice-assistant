@@ -1,6 +1,7 @@
 package com.sanna.ai;
 
 import android.content.Context;
+import android.app.Activity;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.provider.AlarmClock;
@@ -28,6 +29,26 @@ public class VoiceAgentPlugin extends Plugin {
     @PluginMethod public void setVolume(PluginCall c){ int percent=50; try{ percent=c.getInt("percent"); }catch(Exception e){} AudioManager am=(AudioManager)getContext().getSystemService(Context.AUDIO_SERVICE); int max=am.getStreamMaxVolume(AudioManager.STREAM_MUSIC); am.setStreamVolume(AudioManager.STREAM_MUSIC, Math.round(max*percent/100f),0); JSObject r=new JSObject(); r.put("success",true); c.resolve(r); }
     @PluginMethod public void setAlarm(PluginCall c){ String t=c.getString("time","07:00"); String[] p=t.split(":"); Intent i=new Intent(AlarmClock.ACTION_SET_ALARM); i.putExtra(AlarmClock.EXTRA_HOUR,Integer.parseInt(p[0])); i.putExtra(AlarmClock.EXTRA_MINUTES,Integer.parseInt(p[1])); i.putExtra(AlarmClock.EXTRA_MESSAGE,c.getString("label","منبه سنا")); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); JSObject r=new JSObject(); r.put("success",true); c.resolve(r); }
     @PluginMethod public void performGlobalAction(PluginCall c){ if(!ok(c))return; JSObject r=new JSObject(); r.put("success",SannaAccessibilityService.instance.global(c.getString("action","back"))); c.resolve(r); }
-    @PluginMethod public void startBackgroundListening(PluginCall c){ JSObject r=new JSObject(); r.put("success", SannaAccessibilityService.instance!=null); c.resolve(r); }
-    @PluginMethod public void stopBackgroundListening(PluginCall c){ JSObject r=new JSObject(); r.put("success",true); c.resolve(r); }
+
+    @PluginMethod public void requestAppPermissions(PluginCall c){
+        if (getActivity()!=null && android.os.Build.VERSION.SDK_INT>=23){
+            getActivity().requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.POST_NOTIFICATIONS},1001);
+        }
+        JSObject r=new JSObject(); r.put("success",true); c.resolve(r);
+    }
+    @PluginMethod public void getNotifications(PluginCall c){
+        JSArray arr=new JSArray();
+        if (SannaNotificationListener.instance!=null){
+            for (SannaNotificationListener.Item it: SannaNotificationListener.instance.snapshot()){
+                JSObject o=new JSObject(); o.put("pkg",it.pkg); o.put("title",it.title); o.put("text",it.text); arr.put(o);
+            }
+        }
+        JSObject r=new JSObject(); r.put("items",arr); r.put("enabled", SannaNotificationListener.instance!=null); c.resolve(r);
+    }
+    @PluginMethod public void openNotificationListenerSettings(PluginCall c){
+        Intent i=new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); c.resolve();
+    }
+    @PluginMethod public void startBackgroundListening(PluginCall c){ JSObject r=new JSObject(); Intent i=new Intent(getContext(), VoiceForegroundService.class); if(android.os.Build.VERSION.SDK_INT>=26) getContext().startForegroundService(i); else getContext().startService(i); r.put("success", true); c.resolve(r); }
+    @PluginMethod public void stopBackgroundListening(PluginCall c){ getContext().stopService(new Intent(getContext(), VoiceForegroundService.class)); JSObject r=new JSObject(); r.put("success",true); c.resolve(r); }
 }

@@ -252,6 +252,16 @@ export default function App() {
               await NativeAgentBridge.setVolume(parseInt(String(step.value), 10) || 50);
             } else if (step.action === 'set_alarm' && step.value) {
               await NativeAgentBridge.setAlarm(String(step.value), step.description);
+        } else if (step.action === "back") {
+          await NativeAgentBridge.performGlobalAction("back");
+        } else if (step.action === "home") {
+          await NativeAgentBridge.performGlobalAction("home");
+        } else if (step.action === "notifications") {
+          await NativeAgentBridge.performGlobalAction("notifications");
+        } else if (step.action === "read_screen") {
+          await NativeAgentBridge.getScreenText();
+        } else if (step.action === "start_listen") {
+          await NativeAgentBridge.startBackgroundListening(["سنا","تلفوني"]);
             }
           } catch (nativeErr) {
             console.warn('[Native Execution Warning]', nativeErr);
