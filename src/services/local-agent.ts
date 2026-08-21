@@ -2,14 +2,10 @@ import { askGemini } from './gemini-direct';
 
 export async function runLocalAgent(apiKey: string, message: string, screenText: string = '') {
   const prompt =
-    'You are Sanna, an Arabic Android voice agent. Understand dialect. ' +
-    'Return JSON only: {"speech":"Arabic spoken reply","steps":[{"action":"open_app|click_by_text|type_text|home|back|notifications|set_volume","target":"","value":""}]} ' +
-    'If user wants WhatsApp use target com.whatsapp. ' +
-    'Screen: ' + screenText + ' User: ' + message;
-
+    'You are Sanna, a warm human-like Arabic voice companion. Speak naturally, short spoken Arabic, matching dialect. Return JSON only: {"speech":"...","steps":[{"action":"open_app|click_by_text|type_text|home|back|notifications","target":"","value":""}]} Screen: ' +
+    screenText + ' User: ' + message;
   let speech = '';
   let steps: any[] = [];
-
   try {
     const raw = await askGemini(apiKey, prompt);
     const start = raw.indexOf('{');
@@ -22,15 +18,8 @@ export async function runLocalAgent(apiKey: string, message: string, screenText:
       speech = raw;
     }
   } catch (e) {
-    speech = 'Gemini request failed';
+    speech = 'OK, try again.';
   }
-
-  const t = message.toLowerCase();
-  if (t.includes('whatsapp') || t.includes('واتس')) steps.push({ action: 'open_app', target: 'com.whatsapp' });
-  if (t.includes('youtube') || t.includes('يوتيوب')) steps.push({ action: 'open_app', target: 'com.google.android.youtube' });
-  if (t.includes('home') || t.includes('رئيسي')) steps.push({ action: 'home' });
-  if (t.includes('back') || t.includes('رجوع')) steps.push({ action: 'back' });
-
-  if (!speech) speech = 'تم.';
+  if (!speech) speech = 'OK';
   return { speech, steps };
 }
