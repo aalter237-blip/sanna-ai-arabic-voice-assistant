@@ -15,6 +15,10 @@ export interface VoiceAgentPlugin {
   performGlobalAction(o:{action:string}):Promise<{success:boolean}>;
   startBackgroundListening(o?:{wakeWords?:string[]}):Promise<{success:boolean}>;
   stopBackgroundListening():Promise<{success:boolean}>;
+  requestAppPermissions():Promise<{success:boolean}>;
+  getNotifications():Promise<{items:any[];enabled:boolean}>;
+  openNotificationListenerSettings():Promise<void>;
+  replyLastNotification(o:{text:string}):Promise<{success:boolean}>;
 }
 export const VoiceAgent = registerPlugin<VoiceAgentPlugin>("VoiceAgent");
 export default VoiceAgent;

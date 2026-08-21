@@ -97,7 +97,7 @@ When an action is needed, return a structured JSON code block containing an arra
     {
       "step_number": 1,
       "tool": "system_control" | "accessibility_control" | "whatsapp_tool" | "screen_reader",
-      "action": "open_app" | "click_by_text" | "click_by_id" | "scroll_forward" | "read_screen_text" | "set_volume" | "set_timer" | "toggle_wifi" | "type_text" | "send_message",
+      "action": "open_app" | "click_by_text" | "click_by_id" | "scroll_forward" | "read_screen" | "read_screen_text" | "set_volume" | "set_alarm" | "set_timer" | "type_text" | "send_message" | "back" | "home" | "notifications" | "start_listen" | "read_notifications" | "reply_notification",
       "target": "package name, element text or view id",
       "value": "optional value or text to type",
       "recipient": "optional for whatsapp",

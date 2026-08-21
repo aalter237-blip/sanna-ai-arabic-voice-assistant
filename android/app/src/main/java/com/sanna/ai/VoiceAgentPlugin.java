@@ -15,6 +15,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "VoiceAgent")
 public class VoiceAgentPlugin extends Plugin {
+    private String resolvePkg(String name){ if(name==null)return ""; String n=name.toLowerCase(); if(n.contains("واتس")||n.contains("whatsapp"))return "com.whatsapp"; if(n.contains("يوتيوب")||n.contains("youtube"))return "com.google.android.youtube"; if(n.contains("خرائط")||n.contains("maps"))return "com.google.android.apps.maps"; if(n.contains("كاميرا"))return "com.android.camera"; if(n.contains("إعدادات")||n.contains("اعدادات"))return "com.android.settings"; if(n.contains("اتصال")||n.contains("هاتف"))return "com.android.dialer"; if(n.contains("كروم"))return "com.android.chrome"; if(n.contains("تيليجرام"))return "org.telegram.messenger"; if(n.contains("انستقرام"))return "com.instagram.android"; return name; }
     private boolean ok(PluginCall c){ if(SannaAccessibilityService.instance==null){ c.reject("Accessibility Service is not enabled"); return false;} return true; }
     @PluginMethod public void tap(PluginCall c){ if(!ok(c))return; Float x=c.getFloat("x"); Float y=c.getFloat("y"); if(x==null||y==null){c.reject("x and y");return;} SannaAccessibilityService.instance.tap(x,y); c.resolve(); }
     @PluginMethod public void swipe(PluginCall c){ if(!ok(c))return; SannaAccessibilityService.instance.swipe(c.getFloat("x1"),c.getFloat("y1"),c.getFloat("x2"),c.getFloat("y2"),c.getLong("duration",300L)); c.resolve(); }
@@ -49,6 +50,7 @@ public class VoiceAgentPlugin extends Plugin {
         Intent i=new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); c.resolve();
     }
+    @PluginMethod public void replyLastNotification(PluginCall c){ if(!ok(c))return; String text=c.getString("text",""); SannaAccessibilityService.instance.global("notifications"); boolean clicked=SannaAccessibilityService.instance.clickByText("رد")||SannaAccessibilityService.instance.clickByText("Reply"); boolean typed=SannaAccessibilityService.instance.inputText(text); JSObject r=new JSObject(); r.put("success", clicked||typed); c.resolve(r); }
     @PluginMethod public void startBackgroundListening(PluginCall c){ JSObject r=new JSObject(); Intent i=new Intent(getContext(), VoiceForegroundService.class); if(android.os.Build.VERSION.SDK_INT>=26) getContext().startForegroundService(i); else getContext().startService(i); r.put("success", true); c.resolve(r); }
     @PluginMethod public void stopBackgroundListening(PluginCall c){ getContext().stopService(new Intent(getContext(), VoiceForegroundService.class)); JSObject r=new JSObject(); r.put("success",true); c.resolve(r); }
 }
