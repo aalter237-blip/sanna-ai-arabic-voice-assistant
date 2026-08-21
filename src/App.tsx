@@ -325,6 +325,49 @@ export default function App() {
         } catch(e) {}
       }
 
+      for (let round=0; round<2; round++) {
+        let more: string[] = [];
+        try { more = await NativeAgentBridge.getScreenText(); } catch(e) {}
+        if (!more || !more.length) break;
+        (window as any).__sannaScreen = more.slice(0,80).join(" | ");
+        try {
+          const resN = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: userText + "\n\n[نص الشاشة]\n" + (window as any).__sannaScreen,
+              history: conversationHistory,
+              dialect: currentDialect,
+              activeKey: activeKey,
+              currentScreen: (window as any).__sannaScreen,
+            }),
+          });
+          if (!resN.ok) break;
+          const dataN = await resN.json();
+          if (!dataN.steps || !dataN.steps.length) {
+            if (dataN.speech) data.speech = dataN.speech;
+            break;
+          }
+          for (const step of dataN.steps) {
+            try {
+              if (step.action === "open_app" && step.target) await NativeAgentBridge.launchApp(step.target);
+              else if (step.action === "click_by_text" && step.target) await NativeAgentBridge.clickByText(step.target);
+              else if (step.action === "type_text" && step.value) await NativeAgentBridge.inputText(String(step.value));
+              else if (step.action === "send_message") {
+                await NativeAgentBridge.launchApp(step.target || "com.whatsapp");
+                if (step.recipient) {
+                  await NativeAgentBridge.clickByText("بحث");
+                  await NativeAgentBridge.inputText(String(step.recipient));
+                  await NativeAgentBridge.clickByText(String(step.recipient));
+                }
+                if (step.value) await NativeAgentBridge.inputText(String(step.value));
+              }
+            } catch(e) {}
+          }
+          if (dataN.speech) data.speech = dataN.speech;
+        } catch(e) { break; }
+      }
+
 // Speak Vocal Response via Arabic TTS Engine
       setIsSpeaking(true);
       if (soundEffects) {

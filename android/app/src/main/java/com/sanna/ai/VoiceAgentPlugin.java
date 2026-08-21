@@ -50,7 +50,7 @@ public class VoiceAgentPlugin extends Plugin {
         Intent i=new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); getContext().startActivity(i); c.resolve();
     }
-    @PluginMethod public void replyLastNotification(PluginCall c){ if(!ok(c))return; String text=c.getString("text",""); SannaAccessibilityService.instance.global("notifications"); boolean clicked=SannaAccessibilityService.instance.clickByText("رد")||SannaAccessibilityService.instance.clickByText("Reply"); boolean typed=SannaAccessibilityService.instance.inputText(text); JSObject r=new JSObject(); r.put("success", clicked||typed); c.resolve(r); }
+    @PluginMethod public void replyLastNotification(PluginCall c){ if(!ok(c))return; String text=c.getString("text",""); SannaAccessibilityService.instance.global("notifications"); boolean clicked=SannaAccessibilityService.instance.clickByText("رد")||SannaAccessibilityService.instance.clickByText("Reply")||SannaAccessibilityService.instance.clickByText("إجابة")||SannaAccessibilityService.instance.clickByText("أرسل"); boolean typed=SannaAccessibilityService.instance.inputText(text); JSObject r=new JSObject(); r.put("success", clicked||typed); c.resolve(r); }
         @PluginMethod public void requestBatteryIgnore(PluginCall c){
         try {
             android.content.Intent i=new android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);

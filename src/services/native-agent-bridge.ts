@@ -268,4 +268,10 @@ export class NativeAgentBridge {
       return this.inputText(text);
     } catch { return false; }
   }
+
+  public static async requestBatteryIgnore(): Promise<boolean> {
+    const plugin = this.getPlugin();
+    if (!plugin?.requestBatteryIgnore) return false;
+    try { const r = await plugin.requestBatteryIgnore(); return Boolean(r?.success); } catch { return false; }
+  }
 }
