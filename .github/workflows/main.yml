@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         npm install
-        npm install @capacitor/core @capacitor/cli @capacitor/android
+        npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
 
     - name: Build web app
       run: npm run build
@@ -31,6 +31,20 @@ jobs:
         npx cap init "Sanna AI" "com.sanna.ai" --web-dir=dist
         npx cap add android
         npx cap sync
+
+    - name: Fix Kotlin conflict
+      run: |
+        cd android
+        # Force consistent Kotlin version
+        echo '
+        configurations.all {
+            resolutionStrategy {
+                force "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+                force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
+                force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24"
+            }
+        }
+        ' >> build.gradle
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -42,7 +56,7 @@ jobs:
       run: |
         cd android
         chmod +x gradlew
-        ./gradlew assembleDebug
+        ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
