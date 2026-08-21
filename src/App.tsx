@@ -233,7 +233,10 @@ export default function App() {
     const activeKey = apiKeys.length > 0 && apiKeys[activeApiKeyIndex] ? apiKeys[activeApiKeyIndex] : undefined;
 
     try {
-      const { askGemini } = await import('./services/gemini-direct');
+      const { runLocalAgent } = await import('./services/local-agent');
+        const local = await runLocalAgent(activeKey || '', userText);
+        const data: AgentResponse = { speech: local.speech, steps: local.steps } as any;
+        const { askGemini } = await import('./services/gemini-direct');
       const reply = await askGemini(activeKey || '', userText);
       const endpoint = '';
       const res = await fetch(endpoint, {
