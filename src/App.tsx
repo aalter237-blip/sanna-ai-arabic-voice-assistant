@@ -171,6 +171,13 @@ export default function App() {
     voiceAudio.startListening(locale);
   };
 
+  useEffect(() => {
+    NativeAgentBridge.requestAppPermissions();
+    NativeAgentBridge.startBackgroundListening(["سنا","تلفوني","سناء","مساعدي"]);
+    const onWake = () => { try { handleStartListening(); } catch (e) {} };
+    window.addEventListener("sanna-wake", onWake);
+    return () => window.removeEventListener("sanna-wake", onWake);
+  }, []);
   const handleStopListening = () => {
     voiceAudio.stopListening();
     setIsListening(false);
@@ -262,6 +269,10 @@ export default function App() {
           await NativeAgentBridge.getScreenText();
         } else if (step.action === "start_listen") {
           await NativeAgentBridge.startBackgroundListening(["سنا","تلفوني"]);
+        } else if (step.action === "read_notifications") {
+          await NativeAgentBridge.getNotifications();
+        } else if (step.action === "reply_notification" && step.value) {
+          await NativeAgentBridge.replyLastNotification(String(step.value));
             }
           } catch (nativeErr) {
             console.warn('[Native Execution Warning]', nativeErr);

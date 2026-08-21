@@ -28,7 +28,7 @@ public class MainActivity extends BridgeActivity {
         if (intent == null || !intent.getBooleanExtra("wake", false)) return;
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().evaluateJavascript("window.dispatchEvent(new CustomEvent(sanna-wake))", null);
+                getBridge().getWebView().evaluateJavascript("window.dispatchEvent(new CustomEvent('sanna-wake'))", null);
             }
         }, 900);
     }
