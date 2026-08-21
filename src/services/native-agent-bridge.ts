@@ -215,7 +215,19 @@ export class NativeAgentBridge {
       "كاميرا":"com.android.camera","إعدادات":"com.android.settings","الاعدادات":"com.android.settings",
       "اتصال":"com.android.dialer","هاتف":"com.android.dialer","رسائل":"com.android.mms",
       "كروم":"com.android.chrome","فيسبوك":"com.facebook.katana","انستقرام":"com.instagram.android",
-      "تيليجرام":"org.telegram.messenger","تويتر":"com.twitter.android"
+      "تيليجرام":"org.telegram.messenger","تويتر":"com.twitter.android",
+      "جوجل":"com.google.android.googlequicksearchbox","متجر":"com.android.vending",
+      "جيميل":"com.google.android.gm","صور":"com.google.android.apps.photos",
+      "ملفات":"com.google.android.documentsui","ساعة":"com.android.deskclock",
+      "منبه":"com.android.deskclock","حاسبة":"com.google.android.calculator",
+      "واتساب اعمال":"com.whatsapp.w4b","سناب":"com.snapchat.android",
+      "تيك توك":"com.zhiliaoapp.musically","موسيقى":"com.google.android.music",
+      "جوجل":"com.google.android.googlequicksearchbox","متجر":"com.android.vending",
+      "جيميل":"com.google.android.gm","صور":"com.google.android.apps.photos",
+      "ملفات":"com.google.android.documentsui","ساعة":"com.android.deskclock",
+      "منبه":"com.android.deskclock","حاسبة":"com.google.android.calculator",
+      "واتساب اعمال":"com.whatsapp.w4b","سناب":"com.snapchat.android",
+      "تيك توك":"com.zhiliaoapp.musically","موسيقى":"com.google.android.music"
     };
     for (const k of Object.keys(map)) { if (n.includes(k)) return map[k]; }
     return name;

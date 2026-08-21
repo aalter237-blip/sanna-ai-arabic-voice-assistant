@@ -178,6 +178,12 @@ export default function App() {
     window.addEventListener("sanna-wake", onWake);
     return () => window.removeEventListener("sanna-wake", onWake);
   }, []);
+  useEffect(() => {
+    try { const s=localStorage.getItem("sanna-history"); if(s) setConversationHistory(JSON.parse(s)); } catch(e) {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("sanna-history", JSON.stringify(conversationHistory.slice(-30))); } catch(e) {}
+  }, [conversationHistory]);
   const handleStopListening = () => {
     voiceAudio.stopListening();
     setIsListening(false);
@@ -280,7 +286,39 @@ export default function App() {
         }
       }
 
-      // Speak Vocal Response via Arabic TTS Engine
+            let screenTexts: string[] = [];
+      try { screenTexts = await NativeAgentBridge.getScreenText(); } catch(e) {}
+      if (screenTexts && screenTexts.length) {
+        (window as any).__sannaScreen = screenTexts.slice(0,80).join(" | ");
+        try {
+          const res2 = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: userText + "\n\n[نص الشاشة الحالي]\n" + (window as any).__sannaScreen,
+              history: conversationHistory,
+              dialect: currentDialect,
+              activeKey: activeKey,
+              currentScreen: (window as any).__sannaScreen,
+            }),
+          });
+          if (res2.ok) {
+            const data2 = await res2.json();
+            if (data2.steps && data2.steps.length) {
+              for (const step of data2.steps) {
+                try {
+                  if (step.action === "open_app" && step.target) await NativeAgentBridge.launchApp(step.target);
+                  else if (step.action === "click_by_text" && step.target) await NativeAgentBridge.clickByText(step.target);
+                  else if (step.action === "type_text" && step.value) await NativeAgentBridge.inputText(String(step.value));
+                } catch(e) {}
+              }
+            }
+            if (data2.speech) data.speech = data2.speech;
+          }
+        } catch(e) {}
+      }
+
+// Speak Vocal Response via Arabic TTS Engine
       setIsSpeaking(true);
       if (soundEffects) {
         voiceAudio.playSuccessChime();

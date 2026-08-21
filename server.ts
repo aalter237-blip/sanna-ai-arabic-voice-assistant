@@ -209,7 +209,7 @@ app.post("/api/agent/chat", async (req, res) => {
 [CURRENT CONTEXT]
 - Screen State: ${currentScreen}
 - User Preferred Dialect: ${dialect}
-- Conversation History: ${JSON.stringify(history.slice(-4))}
+- Conversation History: ${JSON.stringify(history.slice(-12))}
 
 [USER COMMAND]
 "${message}"
