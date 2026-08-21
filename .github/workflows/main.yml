@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Native Android APK
 
 on:
   workflow_dispatch:
@@ -21,29 +21,14 @@ jobs:
     - name: Install dependencies
       run: |
         npm install
-        npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+        npm install @capacitor/core @capacitor/cli @capacitor/android
 
     - name: Build web app
       run: npm run build
 
-    - name: Initialize Capacitor
+    - name: Sync Capacitor (without recreating android)
       run: |
-        npx cap init "Sanna AI" "com.sanna.ai" --web-dir=dist
-        npx cap add android
-        npx cap sync
-
-    - name: Fix Kotlin conflict
-      run: |
-        cd android
-        echo '
-        configurations.all {
-            resolutionStrategy {
-                force "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
-                force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24"
-                force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24"
-            }
-        }
-        ' >> build.gradle
+        npx cap sync android
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -54,11 +39,11 @@ jobs:
     - name: Build APK
       run: |
         cd android
-        chmod +x gradlew
+        chmod +x gradlew || true
         ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: sanna-ai-apk
+        name: sanna-native-agent-apk
         path: android/app/build/outputs/apk/debug/app-debug.apk
