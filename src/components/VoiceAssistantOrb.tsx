@@ -204,7 +204,7 @@ export const VoiceAssistantOrb: React.FC<VoiceAssistantOrbProps> = ({
           <button
             id="send-command-btn"
             type="submit"
-            disabled={!inputText.trim() || isProcessing}
+            disabled={!inputText.trim()}
             className="p-2.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-30 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
           >
             <Send className="w-4 h-4" />
