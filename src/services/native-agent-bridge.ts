@@ -23,7 +23,7 @@ export class NativeAgentBridge {
 
   private static getPlugin(): any {
     if (this.isCapacitor()) {
-      return (window as any).Capacitor?.Plugins?.VoiceAgentPlugin || VoiceAgent;
+      return (window as any).VoiceAgent;
     }
     return VoiceAgent;
   }
@@ -35,7 +35,7 @@ export class NativeAgentBridge {
     const plugin = this.getPlugin();
     if (!plugin) return false;
     try {
-      const res = await plugin.isAccessibilityEnabled();
+      const res = await plugin.isServiceEnabled();
       return Boolean(res?.enabled);
     } catch (e) {
       console.warn('[NativeAgentBridge] isAccessibilityEnabled error:', e);
