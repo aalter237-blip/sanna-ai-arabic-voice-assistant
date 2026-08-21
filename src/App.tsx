@@ -219,7 +219,10 @@ export default function App() {
     const activeKey = apiKeys.length > 0 && apiKeys[activeApiKeyIndex] ? apiKeys[activeApiKeyIndex] : undefined;
 
     try {
-      const endpoint = mode === 'online' ? '/api/agent/chat' : '/api/offline/chat';
+      const { askGemini } = await import('./services/gemini-direct');
+      const reply = await askGemini(activeKey || '', userText);
+      const res = { ok: true, json: async () => ({ speech: reply, steps: [] }) } as any;
+      const endpoint = 'direct';
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

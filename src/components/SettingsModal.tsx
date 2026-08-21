@@ -95,7 +95,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTestResult(null);
 
     try {
-      const res = await fetch('/api/keys/validate', {
+      const { verifyGeminiKey } = await import('../services/gemini-direct');
+    await verifyGeminiKey(newKeyInput.trim());
+    const res = { ok: true }; const data = { valid: true, error: '' }; // , {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: newKeyInput.trim() }),
