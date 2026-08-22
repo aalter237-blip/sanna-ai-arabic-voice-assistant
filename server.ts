@@ -64,20 +64,24 @@ function rotateServerGeminiKey(reason: string = 'Rate limit 429/403'): string {
 }
 
 const SYSTEM_PROMPT_EXTRA = `
-
-قواعد إلزامية: أجب دائماً بالعربية الفصيحة أو لهجة المستخدم. لا تترك الأمر بدون رد. إذا كان طلباً على الجهاز أرجع steps قابلة للتنفيذ. إذا تعذر التنفيذ اشرح السبب في speech. لا تقل لا أعرف إلا بعد محاولة خطوة واحدة على الأقل.
+قواعد إلزامية:
+1. أجب دائماً بالعربية الطبيعية أو بلهجة المستخدم (سوداني، خليجي، مصري، شامي، مغاربي، فصحى).
+2. إذا كان الطلب يتضمن عملاً على الهاتف، أرجع مصفوفة خطوات "steps" واضحة بدقة.
+3. للأمان: إذا تطلب الأمر شاشة PIN أو تسجيل دخول بنكي أو كلمة مرور، افتح الصفحة للمستخدم ولا تحاول كتابة الرمز سراً، وقل في speech: "فتحت ليك الصفحة، يرجى إدخال الرمز للاستمرار".
+4. إذا لم يكن هناك أداة مباشرة للتطبيق، استخدم نظام UI Automation التلقائي: افتح التطبيق ثم انقر على النصوص المطلوبة.
 `;
+
 const SYSTEM_PROMPT = `
-You are an advanced Arabic AI Voice Assistant & General Android UI Automation Agent.
+You are "Sanna" (سنا), an advanced Arabic AI Voice Assistant & Autonomous Android Phone Agent.
 Your role is to understand user voice commands in Arabic across all dialects (Sudanese - سوداني, Modern Standard Arabic - الفصحى, Egyptian - مصري, Gulf/Saudi - خليجي/سعودي, Levantine - شامي, Maghrebi - مغاربي) and execute Android smartphone actions.
 
 ====================================================
 GENERAL UI AUTOMATION & FALLBACK INSPECTION ENGINE
 ====================================================
 1. FALLBACK UI AUTOMATION:
-   If a user requests an action for an app, third-party service, or setting that doesn't have a dedicated native tool (e.g. adjust custom display settings, music player, social app, taxi booking, or shopping):
+   If a user requests an action for an app, third-party service, or setting:
    - Step 1: Open the target app or setting package using "open_app" (tool: "system_control", action: "open_app", target: "app_package_name_or_id").
-   - Step 2: Dynamically inspect screen element nodes for matching text or content descriptions (e.g. 'Settings', 'Save', 'Play', 'Send', 'Confirm', 'إعدادات', 'حفظ', 'تشغيل', 'إرسال', 'تأكيد', 'موافق').
+   - Step 2: Dynamically inspect screen element nodes for matching text or content descriptions.
    - Step 3: Automatically issue sequential "click_by_text", "type_text", or "scroll_forward" actions to complete the user's intent.
 
 2. SMART GRACEFUL HANDLING OF SECURE SCREENS:
@@ -94,14 +98,14 @@ When an action is needed, return a structured JSON code block containing an arra
 
 \`\`\`json
 {
-  "speech": "الجملة الصوتية التي سيقولها المساعد للمستخدم باللغة العربية (مثال: فتحت ليك الصفحة، يرجى إدخال الرمز للاستمرار)",
+  "speech": "الجملة الصوتية التي سيقولها المساعد للمستخدم باللغة العربية",
   "dialect_detected": "sudanese" | "saudi" | "egyptian" | "levantine" | "maghrebi" | "msa",
-  "intent": "general_ui_automation" | "send_whatsapp" | "read_screen" | "click_element" | "system_control" | "open_app" | "secure_checkpoint" | "general_qa",
+  "intent": "general_ui_automation" | "send_whatsapp" | "read_screen" | "click_element" | "system_control" | "open_app" | "secure_checkpoint" | "general_qa" | "read_notifications",
   "steps": [
     {
       "step_number": 1,
       "tool": "system_control" | "accessibility_control" | "whatsapp_tool" | "screen_reader",
-      "action": "open_app" | "click_by_text" | "click_by_id" | "scroll_forward" | "read_screen" | "read_screen_text" | "set_volume" | "set_alarm" | "set_timer" | "type_text" | "send_message" | "back" | "home" | "notifications" | "start_listen" | "read_notifications" | "reply_notification",
+      "action": "open_app" | "click_by_text" | "click_by_id" | "scroll_forward" | "read_screen" | "read_screen_text" | "set_volume" | "set_alarm" | "set_timer" | "type_text" | "send_message" | "back" | "home" | "recents" | "notifications" | "read_notifications" | "reply_notification" | "lock_screen",
       "target": "package name, element text or view id",
       "value": "optional value or text to type",
       "recipient": "optional for whatsapp",
@@ -135,7 +139,7 @@ Response:
 Response:
 \`\`\`json
 {
-  "speech": "حاضر، سأقوم بفتح التطبيق وتشغيل السورة والضغط على حفظ في المفضلة.",
+  "speech": "حاضر، سأقوم بفتح تطبيق الصوتيات وتشغيل سورة الكهف وحفظها في المفضلة.",
   "dialect_detected": "saudi",
   "intent": "general_ui_automation",
   "steps": [
@@ -151,14 +155,14 @@ Response:
       "tool": "accessibility_control",
       "action": "click_by_text",
       "target": "سورة الكهف",
-      "description": "البحث عن عقدة النص والنقر عليها"
+      "description": "البحث عن سورة الكهف والنقر عليها"
     },
     {
       "step_number": 3,
       "tool": "accessibility_control",
       "action": "click_by_text",
       "target": "حفظ",
-      "description": "النقر التلقائي على زر الحفظ"
+      "description": "النقر على زر الحفظ في المفضلة"
     }
   ]
 }
@@ -169,8 +173,9 @@ Response:
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "AI Voice Assistant Backend",
-    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    service: "AI Voice Assistant Backend (Sanna AI)",
+    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || DEFAULT_GEMINI_KEYS.length > 0),
+    keysCount: DEFAULT_GEMINI_KEYS.length,
   });
 });
 
@@ -213,7 +218,7 @@ app.post("/api/agent/chat", async (req, res) => {
 [CURRENT CONTEXT]
 - Screen State: ${currentScreen}
 - User Preferred Dialect: ${dialect}
-- Conversation History: ${JSON.stringify(history.slice(-12))}
+- Conversation History: ${JSON.stringify(history.slice(-10))}
 
 [USER COMMAND]
 "${message}"
@@ -318,7 +323,7 @@ app.post("/api/offline/chat", async (req, res) => {
   const result = generateOfflineResponse(message || "", currentScreen);
   return res.json({
     source: "local_edge_slm",
-    latency_ms: Math.floor(Math.random() * 25) + 15,
+    latency_ms: Math.floor(Math.random() * 20) + 10,
     ...result,
   });
 });
@@ -327,62 +332,138 @@ app.post("/api/offline/chat", async (req, res) => {
 function generateOfflineResponse(text: string, currentScreen: string) {
   const lower = text.trim();
 
-  // Secure screens / PIN / Financial payment prompts
+  // Detect Dialect
+  let dialect: 'sudanese' | 'saudi' | 'egyptian' | 'levantine' | 'maghrebi' | 'msa' = 'msa';
+  if (lower.includes('زول') || lower.includes('ليك') || lower.includes('داير') || lower.includes('هسع') || lower.includes('شنو') || lower.includes('بنكك')) {
+    dialect = 'sudanese';
+  } else if (lower.includes('تلفوني') || lower.includes('ابشر') || lower.includes('وش') || lower.includes('تكفى') || lower.includes('ودي') || lower.includes('يا طويل')) {
+    dialect = 'saudi';
+  } else if (lower.includes('عايز') || lower.includes('ايه') || lower.includes('ازيك') || lower.includes('دلوقتي') || lower.includes('عشان')) {
+    dialect = 'egyptian';
+  } else if (lower.includes('بدي') || lower.includes('شو') || lower.includes('هيك') || lower.includes('هلأ') || lower.includes('حبيبي')) {
+    dialect = 'levantine';
+  } else if (lower.includes('دابا') || lower.includes('واخا') || lower.includes('عفاك') || lower.includes('بزاف')) {
+    dialect = 'maghrebi';
+  }
+
+  // 1. Notifications Shade & Read Notifications
+  if (lower.includes("إشعار") || lower.includes("اشعار") || lower.includes("إشعارات") || lower.includes("اشعارات") || lower.includes("تنبيهات")) {
+    return {
+      speech: "جاري سحب لوحة الإشعارات وقراءة آخر التنبيهات والرسائل الواردة.",
+      dialect_detected: dialect,
+      intent: "read_notifications",
+      steps: [
+        {
+          step_number: 1,
+          tool: "system_control",
+          action: "notifications",
+          description: "فتح لوحة الإشعارات (Notification Shade)",
+        },
+        {
+          step_number: 2,
+          tool: "system_control",
+          action: "read_notifications",
+          description: "قراءة الإشعارات النشطة عبر SannaNotificationListener",
+        },
+      ],
+    };
+  }
+
+  // 2. Secure screens / PIN / Financial payment prompts / Bankak
   if (
     lower.includes("بنك") ||
+    lower.includes("بنكك") ||
     lower.includes("رقم سري") ||
     lower.includes("رمز") ||
     lower.includes("pin") ||
     lower.includes("بصمة") ||
     lower.includes("تحويل") ||
-    lower.includes("سداد")
+    lower.includes("سداد") ||
+    lower.includes("الراجحي")
   ) {
+    const isSudan = dialect === 'sudanese' || lower.includes('بنكك') || lower.includes('زول');
     return {
-      speech: "فتحت ليك الصفحة، يرجى إدخال الرمز للاستمرار.",
-      dialect_detected: "sudanese",
+      speech: isSudan
+        ? "فتحت ليك الصفحة، يرجى إدخال الرمز للاستمرار."
+        : "فتحت لك صفحة البنك، يرجى إدخال رمز الأمان أو البصمة للمتابعة بأمان.",
+      dialect_detected: isSudan ? "sudanese" : dialect,
       intent: "secure_checkpoint",
       steps: [
         {
           step_number: 1,
           tool: "system_control",
           action: "open_app",
-          target: "com.android.settings",
-          description: "التوجيه الآمن إلى شاشة التحقق وحماية البيانات الحساسة",
+          target: lower.includes("بنكك") ? "com.bok.bankak" : "com.bok.bankak",
+          description: "فتح تطبيق البنك والانتقال لصفحة التحقق الآمن",
         },
       ],
     };
   }
 
-  // WhatsApp Send
-  if (lower.includes("واتساب") || lower.includes("واتس") || lower.includes("رسالة") || lower.includes("ابعث") || lower.includes("أرسل")) {
+  // 2. WhatsApp Send Message
+  if (lower.includes("واتساب") || lower.includes("واتس") || lower.includes("رسالة") || lower.includes("ابعث") || lower.includes("أرسل") || lower.includes("ارسل")) {
     let recipient = "أمي";
     if (lower.includes("علي") || lower.includes("لعلي")) recipient = "علي";
-    if (lower.includes("محمد") || lower.includes("لمحمد")) recipient = "محمد";
-    if (lower.includes("سارة") || lower.includes("لسارة")) recipient = "سارة";
-    if (lower.includes("أبي") || lower.includes("لأبي") || lower.includes("ابوي")) recipient = "أبي";
+    else if (lower.includes("محمد") || lower.includes("لمحمد")) recipient = "محمد";
+    else if (lower.includes("سارة") || lower.includes("لسارة")) recipient = "سارة";
+    else if (lower.includes("أبي") || lower.includes("لأبي") || lower.includes("ابوي") || lower.includes("والدي")) recipient = "أبي";
+    else if (lower.includes("والدتي") || lower.includes("امي")) recipient = "أمي";
+
+    let messageBody = "أنا في الطريق الآن.";
+    if (lower.includes("أنا في الطريق") || lower.includes("في الطريق")) {
+      messageBody = "أنا في الطريق إليكم الآن";
+    } else if (lower.includes("وصلت")) {
+      messageBody = "الحمد لله وصلت بالسلامة";
+    }
+
+    const replyMsg = dialect === 'sudanese'
+      ? `حاضر، جاري إرسال الرسالة إلى ${recipient} عبر الواتساب.`
+      : dialect === 'saudi'
+      ? `أبشر، جاري فتح واتساب وإرسال الرسالة إلى ${recipient}.`
+      : `حاضر، سأقوم بفتح واتساب وإرسال رسالة إلى ${recipient}.`;
 
     return {
-      speech: `تم في الوضع غير المتصل: سأقوم بفتح واتساب وإرسال الرسالة إلى ${recipient}.`,
-      dialect_detected: "msa",
+      speech: replyMsg,
+      dialect_detected: dialect,
       intent: "send_whatsapp",
       steps: [
         {
           step_number: 1,
-          tool: "whatsapp_tool",
-          action: "send_message",
-          recipient: recipient,
-          value: text,
-          description: `إرسال رسالة واتساب مباشرة إلى ${recipient} عبر خدمة إمكانية الوصول`,
+          tool: "system_control",
+          action: "open_app",
+          target: "com.whatsapp",
+          description: "فتح تطبيق واتساب",
+        },
+        {
+          step_number: 2,
+          tool: "accessibility_control",
+          action: "click_by_text",
+          target: recipient,
+          description: `اختيار محادثة ${recipient}`,
+        },
+        {
+          step_number: 3,
+          tool: "accessibility_control",
+          action: "type_text",
+          value: messageBody,
+          description: `كتابة نص الرسالة: "${messageBody}"`,
+        },
+        {
+          step_number: 4,
+          tool: "accessibility_control",
+          action: "click_by_id",
+          target: "com.whatsapp:id/send",
+          description: "النقر على زر الإرسال",
         },
       ],
     };
   }
 
-  // Read screen / Accessibility
-  if (lower.includes("اقرأ") || lower.includes("شاشة") || lower.includes("اقرا") || lower.includes("لخص") || lower.includes("شو مكتوب")) {
+  // 3. Read Screen / Accessibility Inspector
+  if (lower.includes("اقرأ") || lower.includes("شاشة") || lower.includes("اقرا") || lower.includes("لخص") || lower.includes("شو مكتوب") || lower.includes("فحص")) {
     return {
       speech: "جاري فحص الشاشة وقراءة النصوص المتوفرة بواسطة خدمة Accessibility Service.",
-      dialect_detected: "msa",
+      dialect_detected: dialect,
       intent: "read_screen",
       steps: [
         {
@@ -396,46 +477,143 @@ function generateOfflineResponse(text: string, currentScreen: string) {
     };
   }
 
-  // Volume / Brightness / System
-  if (lower.includes("صوت") || lower.includes("علّي") || lower.includes("وطّي") || lower.includes("كتم")) {
-    const isUp = lower.includes("علّي") || lower.includes("ارفع") || lower.includes("زيادة") || lower.includes("آخر");
+  // 4. Volume Control
+  if (lower.includes("صوت") || lower.includes("علّي") || lower.includes("وطّي") || lower.includes("كتم") || lower.includes("ارفع") || lower.includes("اخفض")) {
+    const isUp = lower.includes("علّي") || lower.includes("ارفع") || lower.includes("زيادة") || lower.includes("آخر") || lower.includes("100");
+    const targetVol = isUp ? 100 : (lower.includes("كتم") ? 0 : 30);
     return {
-      speech: isUp ? "تم رفع مستوى صوت الوسائط." : "تم خفض مستوى الصوت.",
-      dialect_detected: "msa",
+      speech: isUp ? "تم رفع مستوى صوت الوسائط إلى 100%." : `تم ضبط مستوى الصوت إلى ${targetVol}%.`,
+      dialect_detected: dialect,
       intent: "system_control",
       steps: [
         {
           step_number: 1,
           tool: "system_control",
           action: "set_volume",
-          value: isUp ? 100 : 30,
-          description: isUp ? "رفع الصوت إلى 100%" : "خفض الصوت إلى 30%",
+          value: targetVol,
+          description: isUp ? "رفع الصوت إلى 100%" : `ضبط الصوت إلى ${targetVol}%`,
         },
       ],
     };
   }
 
-  // Alarm / Timer
-  if (lower.includes("منبه") || lower.includes("صحيني") || lower.includes("ساعة") || lower.includes("مؤقت")) {
+  // 5. Alarm / Timer
+  if (lower.includes("منبه") || lower.includes("صحيني") || lower.includes("ساعة") || lower.includes("مؤقت") || lower.includes("يقظني")) {
+    let alarmTime = "07:00 AM";
+    if (lower.includes("7") || lower.includes("سبعة")) alarmTime = "07:00 AM";
+    else if (lower.includes("8") || lower.includes("ثمانية")) alarmTime = "08:00 AM";
+    else if (lower.includes("6") || lower.includes("ستة")) alarmTime = "06:00 AM";
+
     return {
-      speech: "تم ضبط المنبه بنجاح عبر مدير النظام المحلي.",
-      dialect_detected: "msa",
+      speech: `تم ضبط المنبه بنجاح على الساعة ${alarmTime} عبر مدير النظام المحلي.`,
+      dialect_detected: dialect,
       intent: "system_control",
       steps: [
         {
           step_number: 1,
           tool: "system_control",
-          action: "set_timer",
-          target: "07:00 AM",
-          value: "منبه صوتي",
-          description: "ضبط منبه النظام عبر Android AlarmManager",
+          action: "open_app",
+          target: "com.android.deskclock",
+          description: "فتح تطبيق الساعة والمنبه",
+        },
+        {
+          step_number: 2,
+          tool: "system_control",
+          action: "set_alarm",
+          target: alarmTime,
+          value: "منبه صوتي - سنا",
+          description: `ضبط المنبه على ${alarmTime}`,
         },
       ],
     };
   }
 
-  // General UI Automation / App Open & Action
-  if (lower.includes("افتح") || lower.includes("شغل") || lower.includes("احفظ") || lower.includes("حفظ") || lower.includes("إعدادات")) {
+  // 6. Quran / Media Player with Auto Click
+  if (lower.includes("قرآن") || lower.includes("الكهف") || lower.includes("سورة") || lower.includes("صوتيات") || lower.includes("موسيقى")) {
+    return {
+      speech: "حاضر، سأقوم بفتح المشغل وتشغيل سورة الكهف وحفظها في المفضلة.",
+      dialect_detected: dialect,
+      intent: "general_ui_automation",
+      steps: [
+        {
+          step_number: 1,
+          tool: "system_control",
+          action: "open_app",
+          target: "com.quran.audio",
+          description: "فتح مشغل القرآن الكريم",
+        },
+        {
+          step_number: 2,
+          tool: "accessibility_control",
+          action: "click_by_text",
+          target: "سورة الكهف",
+          description: "النقر على سورة الكهف",
+        },
+        {
+          step_number: 3,
+          tool: "accessibility_control",
+          action: "click_by_text",
+          target: "حفظ في المفضلة",
+          description: "النقر التلقائي على زر حفظ في المفضلة",
+        },
+      ],
+    };
+  }
+
+  // 7. Notifications Shade & Read Notifications
+  if (lower.includes("إشعار") || lower.includes("اشعار") || lower.includes("إشعارات") || lower.includes("اشعارات") || lower.includes("تنبيهات")) {
+    return {
+      speech: "جاري سحب لوحة الإشعارات وقراءة آخر التنبيهات والرسائل الواردة.",
+      dialect_detected: dialect,
+      intent: "read_notifications",
+      steps: [
+        {
+          step_number: 1,
+          tool: "system_control",
+          action: "notifications",
+          description: "فتح لوحة الإشعارات (Notification Shade)",
+        },
+        {
+          step_number: 2,
+          tool: "system_control",
+          action: "read_notifications",
+          description: "قراءة الإشعارات النشطة عبر SannaNotificationListener",
+        },
+      ],
+    };
+  }
+
+  // 8. Global Navigation (Back, Home, Recents, Lock Screen)
+  if (lower.includes("ارجع") || lower.includes("رجوع") || lower.includes("خلف")) {
+    return {
+      speech: "تم الرجوع للشاشة السابقة.",
+      dialect_detected: dialect,
+      intent: "system_control",
+      steps: [{ step_number: 1, tool: "system_control", action: "back", description: "تنفيذ أمر الرجوع" }],
+    };
+  }
+
+  if (lower.includes("رئيسية") || lower.includes("هوم") || lower.includes("شاشة البداية") || lower.includes("اطلع")) {
+    return {
+      speech: "تم الانتقال إلى الشاشة الرئيسية.",
+      dialect_detected: dialect,
+      intent: "system_control",
+      steps: [{ step_number: 1, tool: "system_control", action: "home", description: "الانتقال للشاشة الرئيسية" }],
+    };
+  }
+
+  // 9. Camera
+  if (lower.includes("كاميرا") || lower.includes("صورني") || lower.includes("تصوير") || lower.includes("سيلفي")) {
+    return {
+      speech: "تم فتح الكاميرا وجاهز لالتقاط الصور.",
+      dialect_detected: dialect,
+      intent: "open_app",
+      steps: [{ step_number: 1, tool: "system_control", action: "open_app", target: "com.android.camera", description: "تشغيل تطبيق الكاميرا" }],
+    };
+  }
+
+  // 10. General UI Automation / App Open & Action
+  if (lower.includes("افتح") || lower.includes("شغل") || lower.includes("احفظ") || lower.includes("حفظ") || lower.includes("إعدادات") || lower.includes("اعدادات")) {
     let appTarget = "com.android.settings";
     let appName = "الإعدادات";
     if (lower.includes("واتس") || lower.includes("واتساب")) {
@@ -450,14 +628,14 @@ function generateOfflineResponse(text: string, currentScreen: string) {
     } else if (lower.includes("يوتيوب")) {
       appTarget = "com.google.android.youtube";
       appName = "YouTube";
-    } else if (lower.includes("قرآن") || lower.includes("صوتيات")) {
-      appTarget = "com.quran.audio";
-      appName = "المشغل الصوتي";
+    } else if (lower.includes("ساعة") || lower.includes("منبه")) {
+      appTarget = "com.android.deskclock";
+      appName = "الساعة";
     }
 
     return {
       speech: `أبشر، جاري فتح ${appName} وتنفيذ الأوامر عبر فحص عناصر الشاشة.`,
-      dialect_detected: "msa",
+      dialect_detected: dialect,
       intent: "general_ui_automation",
       steps: [
         {
@@ -471,35 +649,23 @@ function generateOfflineResponse(text: string, currentScreen: string) {
           step_number: 2,
           tool: "accessibility_control",
           action: "click_by_text",
-          target: lower.includes("حفظ") ? "حفظ" : lower.includes("تشغيل") ? "تشغيل" : "إعدادات",
+          target: lower.includes("واي فاي") ? "الواي فاي (Wi-Fi)" : (lower.includes("حفظ") ? "حفظ" : "بحث"),
           description: "فحص شجرة عناصر الشاشة والنقر على العنصر المطابق",
         },
       ],
     };
   }
 
-  // Click on screen
-  if (lower.includes("اضغط") || lower.includes("انقر") || lower.includes("دوس") || lower.includes("كبس")) {
-    return {
-      speech: "جاري البحث عن العنصر والنقر عليه عبر خدمة إمكانية الوصول.",
-      dialect_detected: "msa",
-      intent: "click_element",
-      steps: [
-        {
-          step_number: 1,
-          tool: "accessibility_control",
-          action: "click_by_text",
-          target: text.replace(/(اضغط|انقر|دوس|على|زر)/g, "").trim() || "التالي",
-          description: "العثور على عقدة AccessibilityNodeInfo وتنفيذ ACTION_CLICK",
-        },
-      ],
-    };
-  }
-
   // General fallback
+  const greeting = dialect === 'sudanese'
+    ? "مرحباً بيك يا زول! أنا سنا، مساعدك الصوتي للتحكم الكامل بهاتفك. اطلب مني أي شيء."
+    : dialect === 'saudi'
+    ? "يا هلا والله! أنا مساعدك الصوتي سنا، سم وأمرني وأنا أنفذ على جوالك فوراً."
+    : "أهلاً بك! أنا سنا، وكيلك الصوتي الذكي للأندرويد. يمكنك أن تطلب مني فتح أي تطبيق، إرسال رسائل، النقر التلقائي، أو قراءة الشاشة.";
+
   return {
-    speech: "أهلاً بك، أنا مساعدك الصوتي الذكي للأندرويد. يمكنك أن تطلب مني فتح أي تطبيق، النقر التلقائي، أو قراءة الشاشة.",
-    dialect_detected: "msa",
+    speech: greeting,
+    dialect_detected: dialect,
     intent: "general_qa",
     steps: [],
   };
@@ -508,7 +674,10 @@ function generateOfflineResponse(text: string, currentScreen: string) {
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

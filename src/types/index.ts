@@ -1,8 +1,22 @@
-export type ArabicDialect = 'auto' | 'saudi' | 'egyptian' | 'levantine' | 'maghrebi' | 'msa';
+export type ArabicDialect = 'auto' | 'sudanese' | 'saudi' | 'egyptian' | 'levantine' | 'maghrebi' | 'msa';
 
 export type OperatingMode = 'online' | 'offline';
 
-export type AppScreen = 'home' | 'whatsapp' | 'whatsapp_chat' | 'settings' | 'clock' | 'camera' | 'screen_reader' | 'bank_app';
+export type AppScreen =
+  | 'home'
+  | 'whatsapp'
+  | 'whatsapp_chat'
+  | 'settings'
+  | 'clock'
+  | 'camera'
+  | 'screen_reader'
+  | 'bank_app'
+  | 'quran_player'
+  | 'notifications'
+  | 'browser'
+  | 'maps';
+
+export type AppViewTab = 'assistant_simulator' | 'accessibility' | 'logs' | 'code';
 
 export interface AccessibilityNode {
   id: string;
@@ -38,6 +52,8 @@ export interface AgentResponse {
   steps: ToolStep[];
   latency_ms?: number;
   error_note?: string;
+  key_index?: number;
+  failovers_handled?: number;
 }
 
 export interface ExecutionLogItem {
