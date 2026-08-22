@@ -605,6 +605,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
                 >
                   <option value="auto">🌐 التعرف التلقائي على كافة اللهجات</option>
+                  <option value="sudanese">🇸🇩 اللهجة السودانية (يا زول)</option>
                   <option value="saudi">🇸🇦 اللهجة السعودية والخليجية</option>
                   <option value="egyptian">🇪🇬 اللهجة المصرية</option>
                   <option value="levantine">🇱🇧 اللهجة الشامية</option>

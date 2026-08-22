@@ -11,6 +11,9 @@ import {
   Layers,
   Sparkles,
   Smartphone,
+  ShieldCheck,
+  Terminal,
+  Cpu,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { CODEBASE_FILES } from '../data/codebase-files';
@@ -43,30 +46,57 @@ export const CodeExplorer: React.FC<CodeExplorerProps> = ({ isArabicUI }) => {
     setIsDownloadingZip(true);
     try {
       const zip = new JSZip();
-      const rootFolder = zip.folder('android-voice-agent');
+      const rootFolder = zip.folder('sanna-ai-android-apk-agent');
 
       CODEBASE_FILES.forEach((file) => {
         rootFolder?.file(file.path, file.content);
       });
 
-      // Add README.md for immediate setup instructions
-      const readmeContent = `# Arabic AI Voice Assistant & Android Accessibility Automation Agent
+      // Add README.md for immediate setup and building APK instructions
+      const readmeContent = `# سنا AI - وكيل صوتي ذكي متكامل لنظام الأندرويد (Sanna AI Android APK Agent)
 
-Production-grade AI Voice Assistant and Android Device Control Agent supporting Arabic (MSA & Dialects), Hybrid Online/Offline execution, and Accessibility Automation.
+مشروع أندرويد متكامل 100% للتحكم الكامل بالهاتف عبر الصوت باللهجات العربية (السودانية، الخليجية، المصرية، الشامية، المغاربية، الفصحى).
 
-## Quick Start
-1. \`npm install\`
-2. Copy \`local.config.example.ts\` to \`local.config.ts\` and fill your API keys.
-3. Start Android development build:
+## 🚀 طريقة بناء وتثبيت الـ APK (Build & Install APK):
+
+### المتطلبات:
+- تثبيت **Android Studio** (نسخة Hedgehog أو أحدث).
+- **Node.js** الإصدار 18 أو 20+.
+- تثبيت حزمة **Capacitor CLI**:
+  \`\`\`bash
+  npm install -g @capacitor/cli
+  \`\`\`
+
+### خطوات التجميع والبناء:
+1. فك ضغط هذا المجلد والدخول إليه:
    \`\`\`bash
-   npm run android
+   npm install
+   npm run build
+   npx cap sync android
    \`\`\`
+2. فتح مجلد الأندرويد في **Android Studio**:
+   \`\`\`bash
+   npx cap open android
+   \`\`\`
+   أو افتح مجلد \`android/\` مباشرة من قائمة File -> Open داخل Android Studio.
+3. من القائمة العلوية في Android Studio اختر:
+   **Build -> Build Bundle(s) / APK(s) -> Build APK(s)**.
+4. سيتم إنشاء ملف الـ APK النهائي في المسار:
+   \`android/app/build/outputs/apk/debug/app-debug.apk\`
 
-## Architecture Modules
-- **src/audio/**: Arabic Speech-To-Text (\`stt-service.ts\`), TTS (\`tts-service.ts\`), and Wake Word (\`wake-word-service.ts\`).
-- **src/agent/**: Master Pipeline (\`conversation-pipeline.ts\`), Arabic System Prompt (\`system-prompt.ts\`), Hybrid Provider (\`hybrid-provider.ts\`), and Tool Loop (\`tool-loop.ts\`).
-- **src/tools/**: Accessibility Bridge caller (\`accessibility-tool.ts\`), WhatsApp automate (\`whatsapp-tool.ts\`), and System Control (\`system-control-tool.ts\`).
-- **android/native/**: Kotlin Accessibility Service (\`AndroidAccessibilityService.kt\`) and React Native Bridge (\`AndroidAccessibilityBridge.kt\`).
+---
+
+## 📱 الخدمات المدمجة في الـ APK:
+1. **SannaAccessibilityService.java**:
+   - التحكم التلقائي الكامل، النقر على الشاشة، الكتابة الآلية، استخراج نصوص الشاشة (OCR).
+2. **VoiceForegroundService.java**:
+   - الاستماع الدائم في الخلفية 24/7 لكلمات الاستيقاظ: "سنا"، "يا زول"، "تلفوني"، "مساعدي".
+3. **SannaNotificationListener.java**:
+   - قراءة كافة الإشعارات الواردة، واعتراض رسائل واتساب والرد عليها صوتياً مباشرة عبر \`RemoteInput\`.
+4. **FloatingOverlayService.java**:
+   - زر ميكروفون عائم فوق جميع التطبيقات (Floating Bubble) للتحكم الصوتي السريع في أي وقت.
+5. **VoiceAgentPlugin.java**:
+   - جسر Capacitor الأصلي لتنفيذ الاتصال الهاتفي المباشر، إرسال SMS، التحكم بالفلاش، الصوت، المنبه، والتطبيقات.
 `;
       rootFolder?.file('README.md', readmeContent);
 
@@ -74,7 +104,7 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'android-voice-agent-codebase.zip';
+      link.download = 'sanna-ai-android-apk-agent.zip';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -91,6 +121,7 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
       case 'json':
         return <FileJson className="w-4 h-4 text-amber-400" />;
       case 'kotlin':
+      case 'java':
         return <Smartphone className="w-4 h-4 text-purple-400" />;
       case 'xml':
         return <Layers className="w-4 h-4 text-rose-400" />;
@@ -100,24 +131,22 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
   };
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col h-full">
+    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col h-full" dir="rtl">
       {/* Top Action Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/40">
-            <Code2 className="w-5 h-5" />
+          <div className="p-2.5 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/40">
+            <Code2 className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span>{isArabicUI ? 'مستودع الكود المصدري الكامل للمشروع' : 'Production Codebase'}</span>
-              <span className="text-xs font-mono text-cyan-300 bg-slate-800 px-2 py-0.5 rounded">
-                100% Native & Complete
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-white">مشروع الـ APK وكود المصدر الكامل للأندرويد</h2>
+              <span className="text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-700/50 px-2 py-0.5 rounded-full font-bold">
+                100% Native APK Ready
               </span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              {isArabicUI
-                ? 'جميع الملفات جاهزة للنسخ والتشغيل المباشر في React Native و Android Studio'
-                : 'All files ready for copy-paste into React Native, TypeScript & Kotlin projects'}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              كافة خدمات الأندرويد: إمكانية الوصول، الاستماع في الخلفية، الإشعارات، والأزرار العائمة
             </p>
           </div>
         </div>
@@ -127,19 +156,29 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
           id="download-zip-btn"
           onClick={downloadProjectZip}
           disabled={isDownloadingZip}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer transform hover:scale-105 active:scale-95"
         >
           <Download className="w-4 h-4" />
           <span>
             {isDownloadingZip
-              ? isArabicUI
-                ? 'جاري تجهيز الأرشيف...'
-                : 'Zipping...'
-              : isArabicUI
-              ? 'تحميل المشروع بالكامل (ZIP)'
-              : 'Download Codebase (.ZIP)'}
+              ? 'جاري تجميع حزمة المشروع...'
+              : 'تحميل ملفات الـ APK كاملة (.ZIP)'}
           </span>
         </button>
+      </div>
+
+      {/* APK Instructions Banner */}
+      <div className="mt-4 bg-slate-950 border border-cyan-500/30 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5 text-cyan-300">
+          <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0" />
+          <span>
+            الملفات مهيأة وجاهزة للبناء المباشر عبر <strong>Android Studio</strong> أو أمر <strong>npx cap sync android</strong>.
+          </span>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400 shrink-0">
+          <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">Package: com.sanna.ai</span>
+          <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">Target SDK: 34</span>
+        </div>
       </div>
 
       {/* Main Two-Column Explorer Layout */}
@@ -154,13 +193,13 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isArabicUI ? 'بحث في ملفات المشروع...' : 'Search files...'}
+              placeholder="بحث في ملفات الأندرويد..."
               className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
 
           {/* Files List */}
-          <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1" dir="ltr">
             {filteredFiles.map((file) => {
               const isSelected = selectedFile.path === file.path;
 
@@ -194,7 +233,7 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
           <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-white">{selectedFile.path}</span>
+                <span className="font-mono text-xs font-bold text-white dir-ltr">{selectedFile.path}</span>
                 <span className="text-[10px] text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/40">
                   {selectedFile.language}
                 </span>
@@ -210,19 +249,19 @@ Production-grade AI Voice Assistant and Android Device Control Agent supporting 
               {copiedPath === selectedFile.path ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">{isArabicUI ? 'تم النسخ' : 'Copied'}</span>
+                  <span className="text-emerald-400">تم النسخ</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{isArabicUI ? 'نسخ الكود' : 'Copy Code'}</span>
+                  <span>نسخ الكود</span>
                 </>
               )}
             </button>
           </div>
 
           {/* Code Viewer Body */}
-          <div className="flex-1 overflow-auto p-4 bg-[#0a0f1d] text-slate-200 font-mono text-xs leading-relaxed">
+          <div className="flex-1 overflow-auto p-4 bg-[#0a0f1d] text-slate-200 font-mono text-xs leading-relaxed" dir="ltr">
             <pre className="whitespace-pre">
               <code>
                 {selectedFile.content.split('\n').map((line, index) => (
